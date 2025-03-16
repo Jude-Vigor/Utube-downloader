@@ -1,5 +1,6 @@
 import yt_dlp
 import re
+from tkinter import messagebox
 
 # YouTube URL Regex Pattern match
 YOUTUBE_URL_PATTERN = re.compile(
@@ -23,8 +24,8 @@ def download_video(url, format_choice, folder_path, progress_callback):
         progress_callback (function): A callback function to update progress.
     """
     if not is_valid_youtube_url(url):
-        raise ValueError("Invalid YouTube URL")
-
+        # raise ValueError("Invalid YouTube URL")
+        messagebox.showwarning(title = "Url Error", message="Invalid YouTube URL")
     def progress_hook(d):
         """Handles download progress updates."""
         if d["status"] == "downloading":
