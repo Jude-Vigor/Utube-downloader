@@ -3,15 +3,37 @@ import tkinter as tk
 from tkinter import ttk
 from customtkinter import CTkImage
 from PIL import Image
+
+
 from functions import paste_url, start_download,truncate_text
+
+
 
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("green")
 
+def show_tooltip(event, text):
+    """Displays a tooltip near the widget."""
+    global tooltip  # Using a global variable to store tooltip window
+    tooltip = tk.Toplevel()  # Create a new top-level window (tooltip)
+    tooltip.wm_overrideredirect(True)  # Remove window decorations (title bar, border)
+    tooltip.geometry(f"+{event.x_root + 10}+{event.y_root + 10}")  # Position near cursor
+
+    # Create a label inside tooltip
+    label = tk.Label(tooltip, text=text, background="lightyellow", relief="solid", borderwidth=1)
+    label.pack()
+
+def hide_tooltip(event):
+    """Hides the tooltip."""
+    global tooltip
+    if tooltip:
+        tooltip.destroy()  # Destroy tooltip window
+        tooltip = None  # Reset tooltip reference
+
+
 def create_ui():
     root = ctk.CTk()
     root.title("")
-    
     root.geometry("600x400")
 
     youtube_img = Image.open("youtube.ico")
@@ -49,7 +71,7 @@ def create_ui():
     video_radio = ctk.CTkRadioButton(root, text="Video", variable=format_var, value="video", fg_color="red")
     video_radio.pack(anchor="w", padx=10)
 
-    download_button = ctk.CTkButton(top_frame, text="", fg_color="lightgrey", image=download_icon, height=20, width=20, command=lambda: start_download(url_entry, format_var, status_label, status_var, folder_path))
+    download_button = ctk.CTkButton(top_frame, text="", fg_color="lightgrey", image=download_icon, height=20, width=20, command=lambda: start_download(url_entry, format_var, status_label, status_var, folder_path,progress_var))
     download_button.pack(side="right")
 
     # Paste Button
@@ -60,7 +82,8 @@ def create_ui():
     style = ttk.Style()
     style.configure("TNotebook.Tab", font=("Helvetica", 12, "bold"), padding=[10, 5])
     style.configure("TNotebook", tabmargins=[10, 5, 10, 0])
-    style.configure("progress.TLabel", font=("Helvetica", 12, "bold"), wraplength=300, justify=tk.LEFT, padding=10)
+    style.configure("progress.TLabel", font=("Helvetica", 12, "bold"), wraplength='', justify=tk.LEFT, padding=10)
+
 
     # Notebook for Progress & Downloaded Tabs
     notebook = ttk.Notebook(root)
@@ -82,16 +105,35 @@ def create_ui():
     progress_vidlabel = ttk.Label(progress_frame, anchor= "w", justify= "left",text=status_text, style="progress.TLabel",wraplength=265, relief="solid")
     progress_vidlabel.pack(side="left", padx=10, pady=10)
 
-    status_var = tk.IntVar(value=0)
-    status_label = ttk.Label(progress_frame, text="0...........%", textvariable=status_var, style="progress.TLabel")
-    status_label.pack(side="left")
+
+
+    # Bind tooltip events
+    progress_vidlabel.bind("<Enter>", lambda event: show_tooltip(event, video_title))
+    progress_vidlabel.bind("<Leave>", hide_tooltip)
+
+    tooltip = None  # Initialize tooltip
+
+    status_var = tk.StringVar(value=0)
+    status_label = ttk.Label(progress_frame, text="", textvariable=status_var, style="progress.TLabel", width=20 )
+    status_label.pack(side="left", )
+
+
 
     # Progress Bar
-    progress_bar = ttk.Progressbar(root, orient="horizontal", length=300, mode="determinate")
-    progress_bar.pack(pady=10)
+    progress_var = tk.IntVar()
+    progress_bar = ttk.Progressbar(progress_frame, orient="horizontal", length=200, mode="determinate", variable = progress_var)
+    progress_bar.pack(side = "left", padx=5)
+
 
     pause_button = ctk.CTkButton(progress_frame, text="", width=20, image = pause_icon, fg_color= "lightgrey", height=20)
     pause_button.pack(side="right", padx=5)
+
+    
+
+    
+
+      # Initialize tooltip
+
     # resume_button = ctk.CTkButton(progress_frame, text="Resume", width=80)
     # resume_button.pack(side="right", padx=5)
     progress_listbox1.pack(fill="both", expand=True)
@@ -117,5 +159,7 @@ def create_ui():
 
     notebook.add(progress_tab, text="In Progress")
     notebook.add(downloaded_tab, text="Downloaded")
+
+
 
     root.mainloop()

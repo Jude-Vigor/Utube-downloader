@@ -3,6 +3,7 @@ from tkinter import messagebox
 import threading
 from tkinter import filedialog, messagebox
 from downloader import download_video
+# from ui import progress_var
 
 def paste_url(entry_widget, root):
     """Pastes clipboard text into the given entry widget."""
@@ -22,7 +23,7 @@ def browse_folder(folder_path):
     if folder_selected:
         folder_path.set(folder_selected)
 
-def start_download(url_entry, format_var, status_label, status_var, folder_path):
+def start_download(url_entry, format_var, status_label, status_var, folder_path,progress_var):
     
     url = url_entry.get().strip() 
     format_choice = format_var.get()
@@ -36,15 +37,15 @@ def start_download(url_entry, format_var, status_label, status_var, folder_path)
         messagebox.showwarning("Download Canceled", "No folder selected. Download was canceled.")
         return
 
-    def update_progress_label(percentage):
+    def update_progress_label(percentage,speed,eta,progress):
         """Update progress in the main Tkinter thread using `after()`."""
-        status_var.set(f"Downloading... {percentage}")  # Update the StringVar
+        status_var.set(f"Downloading at: {speed}, - {percentage}, time : {eta}")  # Update the StringVar
         status_label.config(foreground="blue")  # Optionally update the label color
-
+        progress_var.set(progress)
     # Run download in a separate thread
     download_thread = threading.Thread(
         target=download_video, 
-        args=(url, format_choice, folder_path.get(), update_progress_label),  # Pass the callback here
+        args=(url, format_choice, folder_path.get(), update_progress_label,status_var,progress_var),  # Pass the callback here
         daemon=True
     )
     download_thread.start()
