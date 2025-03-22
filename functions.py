@@ -3,7 +3,7 @@ from tkinter import messagebox
 import threading
 from tkinter import filedialog, messagebox
 from downloader import download_video
-# from ui import progress_var
+from utils import truncate_text
 
 def paste_url(entry_widget, root):
     """Pastes clipboard text into the given entry widget."""
@@ -39,7 +39,8 @@ def start_download(url_entry, format_var, status_label, status_var, folder_path,
 
     def update_progress_label(percentage,speed,eta,progress):
         """Update progress in the main Tkinter thread using `after()`."""
-        status_var.set(f"Downloading at: {speed}, - {percentage}, time : {eta}")  # Update the StringVar
+        truncated_text = truncate_text(f"Downloading at: {speed}, - {percentage}, time: {eta}", 30)  # ✅ Truncate here
+        status_var.set(truncated_text)  # Update the StringVar
         status_label.config(foreground="blue")  # Optionally update the label color
         progress_var.set(progress)
     # Run download in a separate thread
@@ -53,8 +54,6 @@ def start_download(url_entry, format_var, status_label, status_var, folder_path,
     status_var.set("Starting Download...")  # Update the StringVar
     status_label.config(foreground="blue")  # Optionally update the label color
 
-def truncate_text(text,max_length = 30):
-    return text[:max_length] + "..." if len(text) > max_length else text
 
 
 

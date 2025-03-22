@@ -2,7 +2,10 @@ import yt_dlp
 import re
 from tkinter import messagebox
 from ui import *
+from utils import truncate_text
 
+# def truncate_text(text,max_length = 30):
+#     return text[:max_length] + "..." if len(text) > max_length else text
 
 # YouTube URL Regex Pattern match
 YOUTUBE_URL_PATTERN = re.compile(
@@ -34,12 +37,13 @@ def download_video(url, format_choice, folder_path, progress_callback,status_var
             if total_bytes > 0:
                 progress = int((downloaded_bytes / total_bytes) * 100)
                 progress_var.set(progress)
-                status_var.set(f"Downloading... {progress}%")
+                status_text = truncate_text(f"Downloading... {progress}%", 20)  # ✅ Truncate text before setting
+                status_var.set(status_text)
                 progress_var.set(progress)
                 percentage = d.get("_percent_str", "0%").strip()  # Default to "0%" if missing
                 speed = d.get('_speed_str', '0%')
                 eta = d.get('_eta_str', 'N/A')
-        
+
 
             if progress_callback:
                 progress_callback(percentage,speed,eta,progress)  # Pass  to the callback

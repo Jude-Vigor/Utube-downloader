@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 from customtkinter import CTkImage
 from PIL import Image
+from utils import truncate_text
 
 
 from functions import paste_url, start_download,truncate_text
@@ -98,31 +99,33 @@ def create_ui():
     progress_frame.pack(pady=0, padx=0, fill="both")
     progress_frame.pack_propagate(True)
 
-    # Example text
+    # Video Title text
     video_title = "Very Long Video Title That Keeps Extending To The Right While Downloading"
-    status_text = truncate_text(f"{video_title} downloading.. In progress", 20)
+    title_text = truncate_text(f"{video_title} downloading.. In progress", 20)
 
-    progress_vidlabel = ttk.Label(progress_frame, anchor= "w", justify= "left",text=status_text, style="progress.TLabel",wraplength=265, relief="solid")
-    progress_vidlabel.pack(side="left", padx=10, pady=10)
-
-
+    title_vidlabel = ttk.Label(progress_frame, anchor= "w", justify= "left",text=title_text, style="progress.TLabel",wraplength=265, relief="solid")
+    title_vidlabel.pack(side="left", padx=10, pady=10)
 
     # Bind tooltip events
-    progress_vidlabel.bind("<Enter>", lambda event: show_tooltip(event, video_title))
-    progress_vidlabel.bind("<Leave>", hide_tooltip)
+    title_vidlabel.bind("<Enter>", lambda event: show_tooltip(event, video_title))
+    title_vidlabel.bind("<Leave>", hide_tooltip)
 
     tooltip = None  # Initialize tooltip
 
-    status_var = tk.StringVar(value=0)
+   
+    status_var = tk.StringVar(value=truncate_text("Initializing...", 20))  # ✅ Truncate the default text
+
+    
     status_label = ttk.Label(progress_frame, text="", textvariable=status_var, style="progress.TLabel", width=20 )
     status_label.pack(side="left", )
 
-
+    status_label.bind("<Enter>", lambda event: show_tooltip(event, status_var.get()))
+    status_label.bind("<Leave>", hide_tooltip)
 
     # Progress Bar
     progress_var = tk.IntVar()
     progress_bar = ttk.Progressbar(progress_frame, orient="horizontal", length=200, mode="determinate", variable = progress_var)
-    progress_bar.pack(side = "left", padx=5)
+    progress_bar.pack(side = "left", padx=10)
 
 
     pause_button = ctk.CTkButton(progress_frame, text="", width=20, image = pause_icon, fg_color= "lightgrey", height=20)
