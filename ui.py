@@ -6,7 +6,7 @@ from PIL import Image
 from utils import truncate_text
 
 
-from functions import paste_url, start_download,truncate_text
+from functions import paste_url, start_download
 
 
 
@@ -83,8 +83,7 @@ def create_ui():
     style = ttk.Style()
     style.configure("TNotebook.Tab", font=("Helvetica", 12, "bold"), padding=[10, 5])
     style.configure("TNotebook", tabmargins=[10, 5, 10, 0])
-    style.configure("progress.TLabel", font=("Helvetica", 12, "bold"), wraplength='', justify=tk.LEFT, padding=10)
-
+    style.configure("progress.TLabel", font=("Helvetica", 10, "bold"), wraplength='', justify=tk.LEFT, padding=10)
 
     # Notebook for Progress & Downloaded Tabs
     notebook = ttk.Notebook(root)
@@ -112,15 +111,15 @@ def create_ui():
 
     tooltip = None  # Initialize tooltip
 
-   
-    status_var = tk.StringVar(value=truncate_text("Initializing...", 20))  # ✅ Truncate the default text
+    # status_var = tk.StringVar(value=truncate_text("0%", 20))  # ✅ Truncate the default text
+    status_var = tk.StringVar(value="0%")  # ✅ Truncate the default text
 
     
-    status_label = ttk.Label(progress_frame, text="", textvariable=status_var, style="progress.TLabel", width=20 )
+    status_label = ttk.Label(progress_frame, text="", textvariable=status_var, style="progress.TLabel", width=30 )
     status_label.pack(side="left", )
 
-    status_label.bind("<Enter>", lambda event: show_tooltip(event, status_var.get()))
-    status_label.bind("<Leave>", hide_tooltip)
+    # status_label.bind("<Enter>", lambda event: show_tooltip(event, status_var.get()))
+    # status_label.bind("<Leave>", hide_tooltip)
 
     # Progress Bar
     progress_var = tk.IntVar()
