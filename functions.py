@@ -16,7 +16,7 @@ def paste_url(entry_widget, root):
         else :
             messagebox.showwarning("Clipboard Empty", "Clipboard is empty. Copy a URL first.")
     except tk.TclError:
-        messagebox.showwarning(title = "Clipboard Invalid", message="Clipboard is empty or does not contain text.")  # Handle empty clipboard
+        messagebox.showwarning(title = "Clipboard Invalid", message= "Clipboard is empty or does not contain text.")  # Handle empty clipboard
 
 
 def browse_folder(folder_path):
@@ -37,14 +37,48 @@ def start_download(url_entry, format_var, status_label, status_var, folder_path,
     if not folder_path.get():
         messagebox.showwarning("Download Canceled", "No folder selected. Download was canceled.")
         return
+    
+    url_entry.delete(0, tk.END) #clears the entry box when download starts'''
 
-    def update_progress_label(percentage,speed,eta,progress):
+
+
+    def format_size_mb(bytes_value):
+        '''convert bytes to Mb'''
+        if bytes_value is None:
+            return ""
+        return f"{bytes_value/(1024 * 1024):.2f} MB"
+
+    def update_progress_label(d,percentage,speed,eta,progress, total_bytes):
         """Update progress in the main Tkinter thread using `after()`."""
-        # full_text = f"Downloading at: {speed}, - {percentage}, time: {eta}"
-        text = f"Downloading at: {speed}, - {percentage}, time: {eta}"  # ✅ Truncate here
-        status_var.set(text)  # Update the StringVar
-        status_label.config(foreground="blue")  # Optionally update the label color
-        progress_var.set(progress)
+        file_size_mb = format_size_mb(total_bytes)
+        text = f"📥{speed} | {percentage} | {file_size_mb} | {eta}"
+
+        if d["status"] == "downloading":
+            status_var.set(text)  # Update the StringVar
+            status_label.config(foreground="blue")  # Optionally update the label color
+            progress_var.set(progress)
+        
+        elif d['status'] == 'finished':
+            status_var.set("Processing file...")  # Show processing stage
+            progress_var.set(95)  # Set to 95% to leave room for merging
+
+        elif d['status'] == 'error':
+            error_message = d.get('error', 'An unknown error occured!') # fetches the error but if none, falls on a custom error(An unknown error)
+            # Check if it's a network issue
+            if "Unable to download webpage" in error_message or "getaddrinfo failed" in error_message:
+                error_message = "No internet connection. Please check your network and try again."
+
+            
+            messagebox.showerror("Download error!", error_message)
+            status_var.set("")
+        
+
+
+
+        
+
+         # ✅ Move to "Downloaded" list once finished
+        
         
     # Run download in a separate thread
     download_thread = threading.Thread(
@@ -58,5 +92,23 @@ def start_download(url_entry, format_var, status_label, status_var, folder_path,
     status_label.config(foreground="blue")  # Optionally update the label color
 
 
+def listbox_get_index(listbox, text):
+    """Find the index of a text in a Listbox."""
+    items = listbox.get(0, tk.END)
+    for i, item in enumerate(items):
+        if text in item:
+            return i
+    return None
 
+# def pause_download(url):
+#     """Pauses the download by stopping the process"""
+#     if url in active_downloads:
+#         active_downloads[url].pause()  # This may not work with yt-dlp
+#         del active_downloads[url]  # Remove from tracking
 
+# def resume_download(url):
+#     """Resumes the download by restarting it"""
+#     if url in active_downloads:
+#         format = "best"  # Adjust this based on your UI
+#         folder = "./downloads"  # Adjust this based on your UI
+#         start_download(url, format, folder, None, None)  # Restart download

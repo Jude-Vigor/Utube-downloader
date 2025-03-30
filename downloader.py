@@ -2,10 +2,7 @@ import yt_dlp
 import re
 from tkinter import messagebox
 from ui import *
-# from utils import truncate_text
-
-# def truncate_text(text,max_length = 30):
-#     return text[:max_length] + "..." if len(text) > max_length else text
+# import os
 
 # YouTube URL Regex Pattern match
 YOUTUBE_URL_PATTERN = re.compile(
@@ -14,17 +11,13 @@ YOUTUBE_URL_PATTERN = re.compile(
     r"([a-zA-Z0-9_-]{11})"
 )
 
-
 def is_valid_youtube_url(url):
     """Check if the given URL is a valid YouTube link."""
     return bool(YOUTUBE_URL_PATTERN.match(url))
 
 def download_video(url, format_choice, folder_path, progress_callback,status_var,progress_var):
     if not is_valid_youtube_url(url):
-        # raise ValueError("Invalid YouTube URL")
         messagebox.showwarning(title = "Url Error", message="Invalid YouTube URL")
-
-    #     progress_label.config(text=f"Speed: {speed}\nPercent: {percent}\nETA: {eta}") 
 
     def progress_hook(d):
         """Handles download progress updates."""
@@ -33,33 +26,39 @@ def download_video(url, format_choice, folder_path, progress_callback,status_var
             downloaded_bytes = d.get("downloaded_bytes", 0)
             total_bytes = d.get("total_bytes", d.get("total_bytes_estimate", 1))
 
-
             if total_bytes > 0:
                 progress = int((downloaded_bytes / total_bytes) * 100)
-                progress_var.set(progress)
-                status_text = f"Downloading... {progress}%"  # 
+                status_text = f"Downloading... {progress}%"  
                 status_var.set(status_text)
                 progress_var.set(progress)
                 percentage = d.get("_percent_str", "0%").strip()  # Default to "0%" if missing
                 speed = d.get('_speed_str', '0%')
                 eta = d.get('_eta_str', 'N/A')
 
-
             if progress_callback:
-                progress_callback(percentage,speed,eta,progress)  # Pass  to the callback
+                progress_callback(d,percentage,speed,eta,progress,total_bytes)  # Pass  to the callback
 
         elif d['status'] == 'finished':
             status_var.set("Processing file...")  # Show processing stage
-            progress_var.set(95)  # Set close to 100%, but leave room for merging
+            progress_var.set(95)  # Set to 95% to leave room for merging
+        
+        elif d['status'] == 'error':
+            error_message = d.get('error', 'An unknown error occured!') # fetches the error but if none, falls on a custom error(An unknown error)
+            # Check if it's a network issue
+            if "Unable to download webpage" in error_message or "getaddrinfo failed" in error_message:
+                error_message = "No internet connection. Please check your network and try again."
+            
+            messagebox.showerror("Download error!", error_message)
+            status_var.set("")
+            
 
-
+    
     # Configure yt-dlp options
     ydl_opts = {
         "no_color": True,
         "format": "bestaudio/best" if format_choice == "audio" else "bestvideo+bestaudio",
         "progress_hooks": [progress_hook],  # Attach progress hook
         "outtmpl": f"{folder_path}/%(title)s.%(ext)s",  # Output file template
-        
         "merge_output_format": "mp4",  # Ensure proper merging
         "postprocessors": [
             {"key": "FFmpegVideoConvertor", "preferedformat": "mp4"},
@@ -73,7 +72,9 @@ def download_video(url, format_choice, folder_path, progress_callback,status_var
             progress_var.set(100)
             status_var.set("Download Complete")
         except Exception as e:
-            status_var.set(f"Error: {str(e)}")
+            # status_var.set(f"Error: {str(e)}")
+            messagebox.showerror("Download error!", str(e))
+            status_var.set("")
             progress_var.set(0)  # Reset progress bar if download fails
 
     print(f"Downloaded {url} as {format_choice} to {folder_path}")

@@ -6,7 +6,7 @@ from PIL import Image
 from utils import truncate_text
 
 
-from functions import paste_url, start_download
+from functions import  start_download,paste_url
 
 
 
@@ -31,11 +31,24 @@ def hide_tooltip(event):
         tooltip.destroy()  # Destroy tooltip window
         tooltip = None  # Reset tooltip reference
 
+def toggle_pause_resume():
+    url = url_var.get().strip()
+
+    if  toggle_var.get() == "running":
+        pause_download(url)
+        toggle_var.set("paused")
+        toggle_button.configure(image=resume_icon)  # Set Resume Icon
+    else:
+        resume_download(url)
+        toggle_var.set("running")
+        toggle_button.configure(image=pause_icon)  # Set Pause Icon
+
+
 
 def create_ui():
     root = ctk.CTk()
     root.title("")
-    root.geometry("600x400")
+    root.geometry("630x400")
 
     youtube_img = Image.open("youtube.ico")
     youtube_icon = CTkImage(youtube_img, size= (100,40))
@@ -53,9 +66,15 @@ def create_ui():
 
     folder_path = tk.StringVar()
 
+
+    pause_icon = ctk.CTkImage(Image.open("pause_icon.png"), size=(20, 20))
+    play_icon = ctk.CTkImage(Image.open("resume_icon.png"), size=(20, 20))
+
     # Load download button icon
-    pause_img = Image.open("pause_icon.png")
-    pause_icon = CTkImage(light_image=pause_img, dark_image=pause_img)
+    # pause_img = Image.open("pause_icon.png")
+    # pause_icon = CTkImage(light_image=pause_img, dark_image=pause_img)
+    # resume_img = Image.open("resume_icon.png")
+    # resume_icon = CTkImage(light_image=resume_img, dark_image=resume_img)
     paste_img = Image.open("paste_icon.png")
     paste_icon = CTkImage(light_image=paste_img, dark_image=paste_img, size=(20,20))
     download_img = Image.open("download_icon.png") 
@@ -72,7 +91,8 @@ def create_ui():
     video_radio = ctk.CTkRadioButton(root, text="Video", variable=format_var, value="video", fg_color="red")
     video_radio.pack(anchor="w", padx=10)
 
-    download_button = ctk.CTkButton(top_frame, text="", fg_color="lightgrey", image=download_icon, height=20, width=20, command=lambda: start_download(url_entry, format_var, status_label, status_var, folder_path,progress_var))
+    download_button = ctk.CTkButton(top_frame, text="", fg_color="lightgrey", image=download_icon, height=20, width=20, 
+                                    command=lambda: start_download(url_entry, format_var, status_label, status_var, folder_path, progress_var))
     download_button.pack(side="right")
 
     # Paste Button
@@ -109,31 +129,24 @@ def create_ui():
     title_vidlabel.bind("<Enter>", lambda event: show_tooltip(event, video_title))
     title_vidlabel.bind("<Leave>", hide_tooltip)
 
-    tooltip = None  # Initialize tooltip
+    # tooltip = None  # Initialize tooltip
 
     # status_var = tk.StringVar(value=truncate_text("0%", 20))  # ✅ Truncate the default text
     status_var = tk.StringVar(value="0%")  # ✅ Truncate the default text
 
-    
-    status_label = ttk.Label(progress_frame, text="", textvariable=status_var, style="progress.TLabel", width=30 )
+    status_label = ttk.Label(progress_frame, text="", textvariable=status_var, style="progress.TLabel", width=40 )
     status_label.pack(side="left", )
-
-    # status_label.bind("<Enter>", lambda event: show_tooltip(event, status_var.get()))
-    # status_label.bind("<Leave>", hide_tooltip)
 
     # Progress Bar
     progress_var = tk.IntVar()
     progress_bar = ttk.Progressbar(progress_frame, orient="horizontal", length=200, mode="determinate", variable = progress_var)
     progress_bar.pack(side = "left", padx=10)
 
-
-    pause_button = ctk.CTkButton(progress_frame, text="", width=20, image = pause_icon, fg_color= "lightgrey", height=20)
-    pause_button.pack(side="right", padx=5)
-
+    toggle_var = ctk.StringVar(value="running")
+    toggle_button = ctk.CTkButton(progress_frame, text="", textvariable= toggle_var, image = pause_icon, fg_color= "lightgrey",  )
+    # command=toggle_pause_resume
+    toggle_button.pack(side="right", padx=5)
     
-
-    
-
       # Initialize tooltip
 
     # resume_button = ctk.CTkButton(progress_frame, text="Resume", width=80)
