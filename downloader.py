@@ -1,12 +1,18 @@
 import subprocess
+import signal
 import yt_dlp
 from utils import is_valid_youtube_url, show_error
 
 
 # Global variables to track download state
+download_process = None
+is_paused = False
+current_progress = 0
 
 def download_video(url,format_choice, folder_path, progress_callback=None, status_var=None, progress_var=None):
-    """##################################################"""
+    """Downloads a video using yt-dlp in a subprocess for pause/resume support."""
+    global download_process, current_progress
+
     if not is_valid_youtube_url(url):
         show_error("Invalid YouTube URL")
         return
