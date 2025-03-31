@@ -1,80 +1,63 @@
+import subprocess
 import yt_dlp
-import re
-from tkinter import messagebox
-from ui import *
-# import os
+from utils import is_valid_youtube_url, show_error
 
-# YouTube URL Regex Pattern match
-YOUTUBE_URL_PATTERN = re.compile(
-    r"^(https?://)?(www\.)?"
-    r"(youtube\.com/(watch\?v=|shorts/)|youtu\.be/)"
-    r"([a-zA-Z0-9_-]{11})"
-)
 
-def is_valid_youtube_url(url):
-    """Check if the given URL is a valid YouTube link."""
-    return bool(YOUTUBE_URL_PATTERN.match(url))
+# Global variables to track download state
 
-def download_video(url, format_choice, folder_path, progress_callback,status_var,progress_var):
+def download_video(url,format_choice, folder_path, progress_callback=None, status_var=None, progress_var=None):
+    """##################################################"""
     if not is_valid_youtube_url(url):
-        messagebox.showwarning(title = "Url Error", message="Invalid YouTube URL")
+        show_error("Invalid YouTube URL")
+        return
 
     def progress_hook(d):
-        """Handles download progress updates."""
         if d["status"] == "downloading":
-            # Extract the percentage from the progress dictionary
             downloaded_bytes = d.get("downloaded_bytes", 0)
             total_bytes = d.get("total_bytes", d.get("total_bytes_estimate", 1))
-
-            if total_bytes > 0:
-                progress = int((downloaded_bytes / total_bytes) * 100)
-                status_text = f"Downloading... {progress}%"  
-                status_var.set(status_text)
+            progress = int((downloaded_bytes / total_bytes) * 100) if total_bytes > 0 else 0
+            
+            if status_var:
+                status_var.set(f"Downloading... {progress}%")
+                
+            if progress_var:
                 progress_var.set(progress)
-                percentage = d.get("_percent_str", "0%").strip()  # Default to "0%" if missing
-                speed = d.get('_speed_str', '0%')
-                eta = d.get('_eta_str', 'N/A')
-
+            
             if progress_callback:
-                progress_callback(d,percentage,speed,eta,progress,total_bytes)  # Pass  to the callback
+                progress_callback(d, progress, total_bytes)
 
         elif d['status'] == 'finished':
-            status_var.set("Processing file...")  # Show processing stage
-            progress_var.set(95)  # Set to 95% to leave room for merging
-        
-        elif d['status'] == 'error':
-            error_message = d.get('error', 'An unknown error occured!') # fetches the error but if none, falls on a custom error(An unknown error)
-            # Check if it's a network issue
-            if "Unable to download webpage" in error_message or "getaddrinfo failed" in error_message:
-                error_message = "No internet connection. Please check your network and try again."
-            
-            messagebox.showerror("Download error!", error_message)
-            status_var.set("")
-            
+            if status_var:
+                status_var.set("Processing file...")
+            if progress_var:
+                progress_var.set(95)
 
-    
-    # Configure yt-dlp options
+        elif d['status'] == 'error':
+            error_message = d.get('error', 'Unknown error')
+            show_error(error_message)
+            if status_var:
+                status_var.set("")
+            if progress_var:
+                progress_var.set(0)
+
     ydl_opts = {
-        "no_color": True,
+        'no_color': True,
         "format": "bestaudio/best" if format_choice == "audio" else "bestvideo+bestaudio",
-        "progress_hooks": [progress_hook],  # Attach progress hook
-        "outtmpl": f"{folder_path}/%(title)s.%(ext)s",  # Output file template
-        "merge_output_format": "mp4",  # Ensure proper merging
-        "postprocessors": [
-            {"key": "FFmpegVideoConvertor", "preferedformat": "mp4"},
-        ],
+        "outtmpl": f"{folder_path}/%(title)s.%(ext)s",
+        "progress_hooks": [progress_hook],
+        
     }
 
-    # Download the video using yt-dlp
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
+        if status_var:
+            status_var.set("Download complete!")
+        if progress_var:
             progress_var.set(100)
-            status_var.set("Download Complete")
-        except Exception as e:
-            # status_var.set(f"Error: {str(e)}")
-            messagebox.showerror("Download error!", str(e))
+    except Exception as e:
+        show_error(str(e))
+        if status_var:
             status_var.set("")
-            progress_var.set(0)  # Reset progress bar if download fails
-
-    print(f"Downloaded {url} as {format_choice} to {folder_path}")
+        if progress_var:
+            progress_var.set(0)

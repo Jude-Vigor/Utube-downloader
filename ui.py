@@ -4,11 +4,7 @@ from tkinter import ttk
 from customtkinter import CTkImage
 from PIL import Image
 from utils import truncate_text
-
-
 from functions import  start_download,paste_url
-
-
 
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("green")
@@ -92,7 +88,7 @@ def create_ui():
     video_radio.pack(anchor="w", padx=10)
 
     download_button = ctk.CTkButton(top_frame, text="", fg_color="lightgrey", image=download_icon, height=20, width=20, 
-                                    command=lambda: start_download(url_entry, format_var, status_label, status_var, folder_path, progress_var))
+                                    command=lambda: start_download(url_entry, format_var,  status_var, folder_path, progress_var,status_label))
     download_button.pack(side="right")
 
     # Paste Button
@@ -147,10 +143,6 @@ def create_ui():
     # command=toggle_pause_resume
     toggle_button.pack(side="right", padx=5)
     
-      # Initialize tooltip
-
-    # resume_button = ctk.CTkButton(progress_frame, text="Resume", width=80)
-    # resume_button.pack(side="right", padx=5)
     progress_listbox1.pack(fill="both", expand=True)
 
     # Downloaded Listbox

@@ -14,3 +14,6 @@ __pycache__/
 original_function.py
 downloader22.py
 
+__pycache__/downloader.cpython-312.pyc
+__pycache__/functions.cpython-312.pyc
+__pycache__/ui.cpython-312.pyc
