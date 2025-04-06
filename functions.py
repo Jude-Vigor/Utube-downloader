@@ -1,5 +1,5 @@
 from downloader import download_video 
-import tkinter as tk  # <-- Add this at the top
+import tkinter as tk 
 from tkinter import filedialog
 import threading
 from utils import show_error
@@ -55,4 +55,4 @@ def start_download(url_entry, format_var, status_var, folder_path, progress_var,
     # Initialize UI state
     status_var.set("Starting download...")
     progress_var.set(0)
-    url_entry.delete(0, tk.END)  # Clear URL entry as in your original
+    url_entry.delete(0, tk.END)  # Clear URL entry 

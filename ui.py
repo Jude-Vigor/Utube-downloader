@@ -1,13 +1,26 @@
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk,filedialog
 from customtkinter import CTkImage
 from PIL import Image
 from utils import truncate_text
 from functions import  start_download,paste_url
+from downloader import  toggle_pause_resume, download_video
+
+
+# pause_icon= None
+# resume_icon=None
+global pause_icon,resume_icon 
+
+pause_icon = ctk.CTkImage(Image.open("pause_icon.png"), size=(20, 20))
+resume_icon = ctk.CTkImage(Image.open("resume_icon.png"), size=(20, 20))
+
+
+
 
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("green")
+
 
 def show_tooltip(event, text):
     """Displays a tooltip near the widget."""
@@ -20,26 +33,12 @@ def show_tooltip(event, text):
     label = tk.Label(tooltip, text=text, background="lightyellow", relief="solid", borderwidth=1)
     label.pack()
 
-def hide_tooltip(event):
+def hide_tooltip(event=None):
     """Hides the tooltip."""
     global tooltip
     if tooltip:
         tooltip.destroy()  # Destroy tooltip window
         tooltip = None  # Reset tooltip reference
-
-def toggle_pause_resume():
-    url = url_var.get().strip()
-
-    if  toggle_var.get() == "running":
-        pause_download(url)
-        toggle_var.set("paused")
-        toggle_button.configure(image=resume_icon)  # Set Resume Icon
-    else:
-        resume_download(url)
-        toggle_var.set("running")
-        toggle_button.configure(image=pause_icon)  # Set Pause Icon
-
-
 
 def create_ui():
     root = ctk.CTk()
@@ -49,6 +48,21 @@ def create_ui():
     youtube_img = Image.open("youtube.ico")
     youtube_icon = CTkImage(youtube_img, size= (100,40))
 
+
+    # Create a global BooleanVar to manage pause/resume state
+    is_paused_var = tk.BooleanVar(value=False)
+
+    def on_toggle(btn):
+        toggle_pause_resume(is_paused_var)
+
+        if is_paused_var.get():  # if paused
+            print("Switching to RESUME icon")
+            btn.configure(image=resume_icon)
+            btn.image = resume_icon
+        else:
+            print("Switching to PAUSE icon")
+            btn.configure(image=pause_icon)
+            btn.image = pause_icon
     # Widgets 
     yt_label = ctk.CTkLabel(root, text="", image= youtube_icon)
     yt_label.pack(anchor="w", padx=10)
@@ -62,21 +76,12 @@ def create_ui():
 
     folder_path = tk.StringVar()
 
-
-    pause_icon = ctk.CTkImage(Image.open("pause_icon.png"), size=(20, 20))
-    play_icon = ctk.CTkImage(Image.open("resume_icon.png"), size=(20, 20))
-
+    
     # Load download button icon
-    # pause_img = Image.open("pause_icon.png")
-    # pause_icon = CTkImage(light_image=pause_img, dark_image=pause_img)
-    # resume_img = Image.open("resume_icon.png")
-    # resume_icon = CTkImage(light_image=resume_img, dark_image=resume_img)
     paste_img = Image.open("paste_icon.png")
     paste_icon = CTkImage(light_image=paste_img, dark_image=paste_img, size=(20,20))
     download_img = Image.open("download_icon.png") 
     download_icon = CTkImage(light_image=download_img, dark_image=download_img, size=(20, 20))
-    # audio_img = Image.open("audio.png").resize(100,100)
-    # audio_icon = CTkImage(audio_img)
 
     # Download Format Selection
     format_var = tk.StringVar(value="video")  # Default format
@@ -91,7 +96,6 @@ def create_ui():
                                     command=lambda: start_download(url_entry, format_var,  status_var, folder_path, progress_var,status_label))
     download_button.pack(side="right")
 
-    # Paste Button
     paste_button = ctk.CTkButton(top_frame, text="",fg_color="lightgrey", command=lambda: paste_url(url_entry, root), image = paste_icon,  height=20, width=20)
     paste_button.pack(side = "right", padx=5)
 
@@ -112,12 +116,14 @@ def create_ui():
     progress_listbox1 = tk.Listbox(progress_tab, background="#EBEBEB")
     progress_frame = ctk.CTkFrame(progress_tab, height=90, width=570)
     progress_frame.pack(pady=0, padx=0, fill="both")
-    progress_frame.pack_propagate(True)
+    progress_frame.pack_propagate(True) #The geometry of the slave determine the parent size
 
     # Video Title text
     video_title = "Very Long Video Title That Keeps Extending To The Right While Downloading"
-    title_text = truncate_text(f"{video_title} downloading.. In progress", 20)
+    title_text = truncate_text(f"{video_title}", 20)
 
+    ###!!!! Remember to implement a StringVar to dynamically Update Title Label ********!! or use title_label.config
+    # title_var = tk.StringVar()
     title_vidlabel = ttk.Label(progress_frame, anchor= "w", justify= "left",text=title_text, style="progress.TLabel",wraplength=265, relief="solid")
     title_vidlabel.pack(side="left", padx=10, pady=10)
 
@@ -129,7 +135,6 @@ def create_ui():
 
     # status_var = tk.StringVar(value=truncate_text("0%", 20))  # ✅ Truncate the default text
     status_var = tk.StringVar(value="0%")  # ✅ Truncate the default text
-
     status_label = ttk.Label(progress_frame, text="", textvariable=status_var, style="progress.TLabel", width=40 )
     status_label.pack(side="left", )
 
@@ -138,9 +143,9 @@ def create_ui():
     progress_bar = ttk.Progressbar(progress_frame, orient="horizontal", length=200, mode="determinate", variable = progress_var)
     progress_bar.pack(side = "left", padx=10)
 
-    toggle_var = ctk.StringVar(value="running")
-    toggle_button = ctk.CTkButton(progress_frame, text="", textvariable= toggle_var, image = pause_icon, fg_color= "lightgrey",  )
-    # command=toggle_pause_resume
+    # toggle_var = ctk.StringVar(value="running")
+    toggle_button = ctk.CTkButton(progress_frame, text="", image = pause_icon, fg_color= "lightgrey", command=lambda: on_toggle(toggle_button ))
+    toggle_button.Image = pause_icon #keep ref
     toggle_button.pack(side="right", padx=5)
     
     progress_listbox1.pack(fill="both", expand=True)
