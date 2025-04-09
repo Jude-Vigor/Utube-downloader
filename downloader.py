@@ -2,9 +2,11 @@ import subprocess
 import psutil
 import re
 from utils import is_valid_youtube_url, show_error
+# from tkinter import messagebox
 
 # Global state
 download_process = None
+download_active = False
 current_progress = 0
 
 def progress_callback(progress, message="Downloading..."):
@@ -13,7 +15,9 @@ def progress_callback(progress, message="Downloading..."):
 
 
 def download_video(url, format_choice, folder_path, update_progress=None, status_var=None, progress_var=None):
-    global download_process, current_progress
+    global download_process, current_progress,download_active
+    download_active = True
+
     
     if not is_valid_youtube_url(url):
         show_error("Invalid YouTube URL")
@@ -68,7 +72,7 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
                 else:
                     progress_callback(100, "Download complete!")
     except Exception as e:
-        handle_error(str(e))  # ✅ This closes the try-except properly
+        handle_error(str(e))  # This closes the try-except properly
 
 
     def handle_error(error_msg):
@@ -128,16 +132,36 @@ def resume_download():
         except psutil.NoSuchProcess:
             print("Process not found (already exited?)")
 
-
 def stop_download():
-    global download_process
-    if download_process:
-        try:
-            p = psutil.Process(download_process.pid)
-            for child in p.children(recursive=True):
-                child.terminate()
-            p.terminate()
-            download_process = None
-            print("Download stopped successfully")
-        except psutil.NoSuchProcess:
-            print("Process not found (already exited?)")
+    global download_process, download_active
+    download_active = False
+
+
+    if not download_process:
+        print("No active download to cancel.")
+        return
+
+
+    # if response:  # User clicked "Yes"
+    try:
+        p = psutil.Process(download_process.pid)
+
+        # Terminate child processes first
+        for child in p.children(recursive=True):
+            child.terminate()
+
+        # Then terminate the main download process
+        p.terminate()
+
+        download_process = None  # Reset the global reference
+        print("✅ Download stopped successfully.")
+
+    except psutil.NoSuchProcess:
+        print("⚠️ Process not found. Might have already exited.")
+        download_process = None  # Clean up just in case
+
+    except Exception as e:
+        print(f"❌ Error stopping download: {e}")
+
+    else:
+        print("❗Cancel aborted by user.")

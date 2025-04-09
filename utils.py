@@ -13,3 +13,4 @@ def truncate_text(text, max_length=30):
 
 def show_error(message):
     messagebox.showerror("Error", message)
+

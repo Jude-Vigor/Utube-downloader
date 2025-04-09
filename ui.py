@@ -1,25 +1,23 @@
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk,filedialog
+from tkinter import ttk,messagebox,filedialog
 from customtkinter import CTkImage
 from PIL import Image
 from utils import truncate_text
 from functions import  start_download,paste_url
-from downloader import  toggle_pause_resume, download_video
+from downloader import  toggle_pause_resume, stop_download
+import winsound
 
-
-# pause_icon= None
-# resume_icon=None
 global pause_icon,resume_icon 
 
-pause_icon = ctk.CTkImage(Image.open("pause_icon.png"), size=(20, 20))
-resume_icon = ctk.CTkImage(Image.open("resume_icon.png"), size=(20, 20))
-
-
+pause_icon = ctk.CTkImage(Image.open("pause_icon2.png"), size=(20, 20))
+resume_icon = ctk.CTkImage(Image.open("resume_icon2.png"), size=(20, 20))
+cancel_icon = CTkImage(Image.open("cancel_icon2.png"), size=(20, 20))
 
 
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("green")
+
 
 
 def show_tooltip(event, text):
@@ -43,7 +41,7 @@ def hide_tooltip(event=None):
 def create_ui():
     root = ctk.CTk()
     root.title("")
-    root.geometry("630x400")
+    root.geometry("660x400")
 
     youtube_img = Image.open("youtube.ico")
     youtube_icon = CTkImage(youtube_img, size= (100,40))
@@ -52,17 +50,40 @@ def create_ui():
     # Create a global BooleanVar to manage pause/resume state
     is_paused_var = tk.BooleanVar(value=False)
 
-    def on_toggle(btn):
+    def on_toggle(btn, status_var):
+
+        from downloader import download_active  # import the flag
+
+        if not download_active:
+            print("⚠️ Cannot resume: No active download.")
+            status_var.set("⚠️ Cannot resume. Download cancelled.")
+            return
         toggle_pause_resume(is_paused_var)
 
         if is_paused_var.get():  # if paused
             print("Switching to RESUME icon")
             btn.configure(image=resume_icon)
             btn.image = resume_icon
+            status_var.set("⏸️ Paused...")
         else:
             print("Switching to PAUSE icon")
             btn.configure(image=pause_icon)
             btn.image = pause_icon
+            status_var.set("▶️ Resuming...")
+
+    def on_cancel(cancel_button,status_var,progress_var):
+
+        response = messagebox.askyesno("Cancel Download", "Are you sure you want to cancel the download?")
+
+        if response:
+            stop_download()
+        
+            # cancel_button.configure(state="disabled")
+            status_var.set("❌ Download cancelled.")
+            status_label.configure(foreground="red")
+            progress_var.set(0)
+        else:
+            pass
     # Widgets 
     yt_label = ctk.CTkLabel(root, text="", image= youtube_icon)
     yt_label.pack(anchor="w", padx=10)
@@ -122,19 +143,18 @@ def create_ui():
     video_title = "Very Long Video Title That Keeps Extending To The Right While Downloading"
     title_text = truncate_text(f"{video_title}", 20)
 
-    ###!!!! Remember to implement a StringVar to dynamically Update Title Label ********!! or use title_label.config
-    # title_var = tk.StringVar()
-    title_vidlabel = ttk.Label(progress_frame, anchor= "w", justify= "left",text=title_text, style="progress.TLabel",wraplength=265, relief="solid")
-    title_vidlabel.pack(side="left", padx=10, pady=10)
+    vid_title_var = tk.StringVar()
+    vid_title_var.set("🎬 Video title will appear here.")
+    vid_titlelabel = ttk.Label(progress_frame, anchor= "w", justify= "left",text=title_text, style="progress.TLabel",wraplength=265, relief="solid")
+    vid_titlelabel.pack(side="left", padx=10, pady=10)
 
     # Bind tooltip events
-    title_vidlabel.bind("<Enter>", lambda event: show_tooltip(event, video_title))
-    title_vidlabel.bind("<Leave>", hide_tooltip)
+    vid_titlelabel.bind("<Enter>", lambda event: show_tooltip(event, video_title))
+    vid_titlelabel.bind("<Leave>", hide_tooltip)
 
     # tooltip = None  # Initialize tooltip
 
-    # status_var = tk.StringVar(value=truncate_text("0%", 20))  # ✅ Truncate the default text
-    status_var = tk.StringVar(value="0%")  # ✅ Truncate the default text
+    status_var = tk.StringVar(value="0%")  
     status_label = ttk.Label(progress_frame, text="", textvariable=status_var, style="progress.TLabel", width=40 )
     status_label.pack(side="left", )
 
@@ -144,10 +164,15 @@ def create_ui():
     progress_bar.pack(side = "left", padx=10)
 
     # toggle_var = ctk.StringVar(value="running")
-    toggle_button = ctk.CTkButton(progress_frame, text="", image = pause_icon, fg_color= "lightgrey", command=lambda: on_toggle(toggle_button ))
+    toggle_button = ctk.CTkButton(progress_frame, text="", image = pause_icon, fg_color= "lightgrey", height=20, width=20,
+                                  command=lambda: on_toggle(toggle_button,status_var ))
     toggle_button.Image = pause_icon #keep ref
     toggle_button.pack(side="right", padx=5)
-    
+
+    cancel_button = ctk.CTkButton(progress_frame, text= "", image = cancel_icon, fg_color= "lightgrey", height=20, width=20,
+                                   command= lambda: on_cancel(cancel_button, status_var, progress_var))
+    cancel_button.pack(side = "right", )
+                       
     progress_listbox1.pack(fill="both", expand=True)
 
     # Downloaded Listbox

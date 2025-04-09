@@ -45,7 +45,7 @@ def start_download(url_entry, format_var, status_var, folder_path, progress_var,
         status_label.config(foreground="blue")  # Optionally update the label color
         progress_var.set(progress)
 
-    # Start download in thread (matches your UI's threading approach)
+    # Start download in thread 
     threading.Thread(
         target=download_video,
         args=(url, format_var.get(), folder_path.get(), update_progress, status_var, progress_var),
