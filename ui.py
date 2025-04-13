@@ -1,12 +1,12 @@
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk,messagebox,filedialog
+from tkinter import ttk,messagebox
 from customtkinter import CTkImage
 from PIL import Image
 from utils import truncate_text
 from functions import  start_download,paste_url
-from downloader import  toggle_pause_resume, stop_download
-import winsound
+from downloader import  toggle_pause_resume, stop_download,fetch_video_info
+from threading import Thread
 
 global pause_icon,resume_icon 
 
@@ -14,11 +14,8 @@ pause_icon = ctk.CTkImage(Image.open("pause_icon2.png"), size=(20, 20))
 resume_icon = ctk.CTkImage(Image.open("resume_icon2.png"), size=(20, 20))
 cancel_icon = CTkImage(Image.open("cancel_icon2.png"), size=(20, 20))
 
-
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("green")
-
-
 
 def show_tooltip(event, text):
     """Displays a tooltip near the widget."""
@@ -38,14 +35,17 @@ def hide_tooltip(event=None):
         tooltip.destroy()  # Destroy tooltip window
         tooltip = None  # Reset tooltip reference
 
+full_title = ''
+tooltip = None
+
+
 def create_ui():
     root = ctk.CTk()
-    root.title("")
-    root.geometry("660x400")
+    root.title("Vigor YT Downloader")
+    root.geometry("700x400")
 
     youtube_img = Image.open("youtube.ico")
     youtube_icon = CTkImage(youtube_img, size= (100,40))
-
 
     # Create a global BooleanVar to manage pause/resume state
     is_paused_var = tk.BooleanVar(value=False)
@@ -90,14 +90,52 @@ def create_ui():
 
     top_frame = ctk.CTkFrame(root)
     top_frame.pack(anchor="w", fill="x", pady=5, padx=10)
-
+    
     url_var = tk.StringVar()
-    url_entry = ctk.CTkEntry(top_frame, textvariable=url_var, width=400)
+    url_entry = ctk.CTkEntry(top_frame, textvariable = url_var, width=400)
     url_entry.pack(side="left", fill="x", expand=True)
 
     folder_path = tk.StringVar()
 
+    last_url = {"value": ""} ## use a mutable object to allow updates inside nested function without declaring nonlocal scope
     
+    def on_url_entry_change(event=None):
+
+        url = url_entry.get()
+        print("URL entered:", url)  # Debug print
+
+        if not url.strip():
+            vid_title_var.set("Video title will appear here.")
+            return
+        if url == last_url["value"]:
+            return
+        
+        last_url["value"] = url
+        vid_title_var.set("Fetching video info...")
+
+        def fetch_and_update(url):
+            info = fetch_video_info(url)
+            # print("Fetched info:", info)
+
+            if info:
+                
+                title = info.get("title", "Unknown Title")
+                global full_title
+                full_title= title
+                print(full_title) # For debug
+                truncated = truncate_text(f"{full_title}", 20)
+
+                url_entry.after(0, lambda: vid_title_var.set( truncated))
+                # root.after(0, lambda: root.title(full_title))  # <-- Set window title here
+
+            else:
+                url_entry.after(0, lambda: vid_title_var.set("❌ Could not fetch video info."))
+
+        Thread(target = fetch_and_update, args=(url,), daemon = True).start()    
+    
+    url_entry.bind("<FocusOut>", on_url_entry_change)  # when the user leaves the field
+    url_entry.bind("<Return>", on_url_entry_change)    # when user presses Enter   
+
     # Load download button icon
     paste_img = Image.open("paste_icon.png")
     paste_icon = CTkImage(light_image=paste_img, dark_image=paste_img, size=(20,20))
@@ -139,17 +177,14 @@ def create_ui():
     progress_frame.pack(pady=0, padx=0, fill="both")
     progress_frame.pack_propagate(True) #The geometry of the slave determine the parent size
 
-    # Video Title text
-    video_title = "Very Long Video Title That Keeps Extending To The Right While Downloading"
-    title_text = truncate_text(f"{video_title}", 20)
-
     vid_title_var = tk.StringVar()
-    vid_title_var.set("🎬 Video title will appear here.")
-    vid_titlelabel = ttk.Label(progress_frame, anchor= "w", justify= "left",text=title_text, style="progress.TLabel",wraplength=265, relief="solid")
+    vid_title_var.set("Video title will appear here.")
+    vid_titlelabel = ttk.Label(progress_frame, anchor= "w", justify= "left",textvariable = vid_title_var, style="progress.TLabel",wraplength=265, relief="solid")
     vid_titlelabel.pack(side="left", padx=10, pady=10)
 
     # Bind tooltip events
-    vid_titlelabel.bind("<Enter>", lambda event: show_tooltip(event, video_title))
+    
+    vid_titlelabel.bind("<Enter>", lambda event: show_tooltip(event, full_title))
     vid_titlelabel.bind("<Leave>", hide_tooltip)
 
     # tooltip = None  # Initialize tooltip
@@ -171,7 +206,7 @@ def create_ui():
 
     cancel_button = ctk.CTkButton(progress_frame, text= "", image = cancel_icon, fg_color= "lightgrey", height=20, width=20,
                                    command= lambda: on_cancel(cancel_button, status_var, progress_var))
-    cancel_button.pack(side = "right", )
+    cancel_button.pack(side = "right", padx = 5 )
                        
     progress_listbox1.pack(fill="both", expand=True)
 

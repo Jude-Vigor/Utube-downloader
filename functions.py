@@ -44,7 +44,8 @@ def start_download(url_entry, format_var, status_var, folder_path, progress_var,
         status_var.set(f"📥{speed} | {percentage} | {file_size_mb} | {eta}")
         status_label.config(foreground="blue")  # Optionally update the label color
         progress_var.set(progress)
-
+        
+    
     # Start download in thread 
     threading.Thread(
         target=download_video,

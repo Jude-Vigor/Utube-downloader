@@ -2,7 +2,7 @@ import subprocess
 import psutil
 import re
 from utils import is_valid_youtube_url, show_error
-# from tkinter import messagebox
+from yt_dlp import YoutubeDL
 
 # Global state
 download_process = None
@@ -14,11 +14,27 @@ def progress_callback(progress, message="Downloading..."):
     print(f"{message} {progress:.1f}%")  # Replace with actual UI update logic
 
 
+def fetch_video_info(url):
+    print(f"Fetching info for: {url}")  
+
+    ydl_opts = {
+        'quiet': True,
+        'skip_download': True,
+    }
+    try:
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            print("Video title:", info.get("title", "N/A"))  
+
+            return info
+    except Exception as e:
+        print("Error fetching video info:", e)
+        return None
+    
 def download_video(url, format_choice, folder_path, update_progress=None, status_var=None, progress_var=None):
     global download_process, current_progress,download_active
     download_active = True
 
-    
     if not is_valid_youtube_url(url):
         show_error("Invalid YouTube URL")
         return
