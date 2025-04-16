@@ -5,7 +5,7 @@ from customtkinter import CTkImage
 from PIL import Image
 from utils import truncate_text
 from functions import  start_download,paste_url
-from downloader import  toggle_pause_resume, stop_download,fetch_video_info
+from downloader import  toggle_pause_resume, stop_download,fetch_video_info,download_process
 from threading import Thread
 
 global pause_icon,resume_icon 
@@ -37,7 +37,7 @@ def hide_tooltip(event=None):
 
 full_title = ''
 tooltip = None
-
+cancel_button = {"value":""}
 
 def create_ui():
     root = ctk.CTk()
@@ -47,6 +47,7 @@ def create_ui():
     youtube_img = Image.open("youtube.ico")
     youtube_icon = CTkImage(youtube_img, size= (100,40))
 
+    # from downloader import download_active
     # Create a global BooleanVar to manage pause/resume state
     is_paused_var = tk.BooleanVar(value=False)
 
@@ -56,8 +57,10 @@ def create_ui():
 
         if not download_active:
             print("⚠️ Cannot resume: No active download.")
-            status_var.set("⚠️ Cannot resume. Download cancelled.")
+            
+            status_var.set("⚠️ No active Download .")
             return
+        
         toggle_pause_resume(is_paused_var)
 
         if is_paused_var.get():  # if paused
@@ -71,17 +74,27 @@ def create_ui():
             btn.image = pause_icon
             status_var.set("▶️ Resuming...")
 
-    def on_cancel(cancel_button,status_var,progress_var):
-
+    def on_cancel(cancel_button,status_var,progress_var,vid_titlelvar):
+        from downloader import download_active
+        
         response = messagebox.askyesno("Cancel Download", "Are you sure you want to cancel the download?")
 
         if response:
-            stop_download()
-        
-            # cancel_button.configure(state="disabled")
-            status_var.set("❌ Download cancelled.")
-            status_label.configure(foreground="red")
-            progress_var.set(0)
+            if download_active:
+                stop_download()
+                cancel_button.configure(state="disabled")
+                status_var.set("❌ Download cancelled.")
+                status_label.configure(foreground="red")
+                progress_var.set(0)
+                vid_title_var.set("Video title will appear here.")
+
+
+                status_label.after(4000, lambda: status_var.set(""))
+
+                
+            else:
+                pass
+            # status_var.set("❌ No active download to cancel.")
         else:
             pass
     # Widgets 
@@ -99,12 +112,12 @@ def create_ui():
 
     last_url = {"value": ""} ## use a mutable object to allow updates inside nested function without declaring nonlocal scope
     
-    def on_url_entry_change(event=None):
-
-        url = url_entry.get()
+    def on_url_entry(event=None):
+        from utils import is_valid_youtube_url
+        url = url_entry.get().strip()
         print("URL entered:", url)  # Debug print
 
-        if not url.strip():
+        if not url or not is_valid_youtube_url(url):
             vid_title_var.set("Video title will appear here.")
             return
         if url == last_url["value"]:
@@ -126,15 +139,15 @@ def create_ui():
                 truncated = truncate_text(f"{full_title}", 20)
 
                 url_entry.after(0, lambda: vid_title_var.set( truncated))
-                # root.after(0, lambda: root.title(full_title))  # <-- Set window title here
+                # root.after(0, lambda: root.title(full_title))  # <-- Set window title
 
             else:
                 url_entry.after(0, lambda: vid_title_var.set("❌ Could not fetch video info."))
 
         Thread(target = fetch_and_update, args=(url,), daemon = True).start()    
     
-    url_entry.bind("<FocusOut>", on_url_entry_change)  # when the user leaves the field
-    url_entry.bind("<Return>", on_url_entry_change)    # when user presses Enter   
+    url_entry.bind("<FocusOut>", on_url_entry)  # when the user leaves the field
+    url_entry.bind("<Return>", on_url_entry)    # when user presses Enter   
 
     # Load download button icon
     paste_img = Image.open("paste_icon.png")
@@ -152,7 +165,7 @@ def create_ui():
     video_radio.pack(anchor="w", padx=10)
 
     download_button = ctk.CTkButton(top_frame, text="", fg_color="lightgrey", image=download_icon, height=20, width=20, 
-                                    command=lambda: start_download(url_entry, format_var,  status_var, folder_path, progress_var,status_label))
+                                    command=lambda: start_download(url_entry, format_var,  status_var, folder_path, progress_var,status_label,cancel_button))
     download_button.pack(side="right")
 
     paste_button = ctk.CTkButton(top_frame, text="",fg_color="lightgrey", command=lambda: paste_url(url_entry, root), image = paste_icon,  height=20, width=20)
@@ -179,7 +192,7 @@ def create_ui():
 
     vid_title_var = tk.StringVar()
     vid_title_var.set("Video title will appear here.")
-    vid_titlelabel = ttk.Label(progress_frame, anchor= "w", justify= "left",textvariable = vid_title_var, style="progress.TLabel",wraplength=265, relief="solid")
+    vid_titlelabel = ttk.Label(progress_frame, anchor= "w", justify= "left",textvariable = vid_title_var, style="progress.TLabel",wraplength=265, width=25, relief="solid")
     vid_titlelabel.pack(side="left", padx=10, pady=10)
 
     # Bind tooltip events
@@ -205,7 +218,9 @@ def create_ui():
     toggle_button.pack(side="right", padx=5)
 
     cancel_button = ctk.CTkButton(progress_frame, text= "", image = cancel_icon, fg_color= "lightgrey", height=20, width=20,
-                                   command= lambda: on_cancel(cancel_button, status_var, progress_var))
+                                   command= lambda: on_cancel(cancel_button, status_var, progress_var,vid_title_var))
+    cancel_button.configure(state = "disabled")
+    
     cancel_button.pack(side = "right", padx = 5 )
                        
     progress_listbox1.pack(fill="both", expand=True)

@@ -31,10 +31,10 @@ def fetch_video_info(url):
         print("Error fetching video info:", e)
         return None
     
-def download_video(url, format_choice, folder_path, update_progress=None, status_var=None, progress_var=None):
+def download_video(url, format_choice, folder_path, update_progress=None, status_var=None, progress_var=None, cancel_button = None):
     global download_process, current_progress,download_active
     download_active = True
-
+    
     if not is_valid_youtube_url(url):
         show_error("Invalid YouTube URL")
         return
@@ -89,7 +89,6 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
                     progress_callback(100, "Download complete!")
     except Exception as e:
         handle_error(str(e))  # This closes the try-except properly
-
 
     def handle_error(error_msg):
         show_error(error_msg)
@@ -152,13 +151,10 @@ def stop_download():
     global download_process, download_active
     download_active = False
 
-
     if not download_process:
         print("No active download to cancel.")
         return
 
-
-    # if response:  # User clicked "Yes"
     try:
         p = psutil.Process(download_process.pid)
 

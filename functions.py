@@ -16,17 +16,24 @@ def paste_url(entry_widget, root):
     except tk.TclError:  # Now correctly referenced
         show_error("Clipboard is empty or contains non-text data")
 
-def start_download(url_entry, format_var, status_var, folder_path, progress_var,status_label):
+def start_download(url_entry, format_var, status_var, folder_path, progress_var,status_label,cancel_button):
+    from utils import is_valid_youtube_url
+
     """######################################"""
+    # is_valid_youtube_url(url_entry.get())
+    # if validate_url:
     url = url_entry.get().strip()
-    if not url:
+    if not url or not is_valid_youtube_url(url):
         show_error("Please enter a YouTube URL")
         return
-
+    
     folder_selected = filedialog.askdirectory()
+    cancel_button.configure(state="normal")  # Enable cancel button
+
     if not folder_selected:
         return
     folder_path.set(folder_selected)
+
     
     def format_size_mb(bytes_value):
         """Convert size in bytes to mb"""
@@ -42,18 +49,19 @@ def start_download(url_entry, format_var, status_var, folder_path, progress_var,
         file_size_mb = format_size_mb(total_bytes)
         
         status_var.set(f"📥{speed} | {percentage} | {file_size_mb} | {eta}")
-        status_label.config(foreground="blue")  # Optionally update the label color
+        status_label.configure(foreground="blue")  # Optionally update the label color
         progress_var.set(progress)
         
     
     # Start download in thread 
     threading.Thread(
         target=download_video,
-        args=(url, format_var.get(), folder_path.get(), update_progress, status_var, progress_var),
+        args=(url, format_var.get(), folder_path.get(), update_progress, status_var, progress_var, cancel_button),
         daemon=True
     ).start()
 
     # Initialize UI state
+    # status_label.config(foreground = "blue")
     status_var.set("Starting download...")
     progress_var.set(0)
     url_entry.delete(0, tk.END)  # Clear URL entry 
