@@ -90,11 +90,9 @@ def create_ui():
 
 
                 status_label.after(4000, lambda: status_var.set(""))
-
-                
             else:
                 pass
-            # status_var.set("❌ No active download to cancel.")
+            
         else:
             pass
     # Widgets 
@@ -138,18 +136,19 @@ def create_ui():
                 print(full_title) # For debug
                 truncated = truncate_text(f"{full_title}", 20)
 
+                # Update label safely from thread
                 url_entry.after(0, lambda: vid_title_var.set( truncated))
                 # root.after(0, lambda: root.title(full_title))  # <-- Set window title
-
             else:
                 url_entry.after(0, lambda: vid_title_var.set("❌ Could not fetch video info."))
 
         Thread(target = fetch_and_update, args=(url,), daemon = True).start()    
     
     url_entry.bind("<FocusOut>", on_url_entry)  # when the user leaves the field
-    url_entry.bind("<Return>", on_url_entry)    # when user presses Enter   
+    url_entry.bind("<Return>", on_url_entry)    # when user presses Enter  
+    # url_entry.bind("<KeyRelease>", on_url_entry)
 
-    # Load download button icon
+    # Load icons
     paste_img = Image.open("paste_icon.png")
     paste_icon = CTkImage(light_image=paste_img, dark_image=paste_img, size=(20,20))
     download_img = Image.open("download_icon.png") 

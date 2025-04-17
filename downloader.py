@@ -34,6 +34,18 @@ def fetch_video_info(url):
 def download_video(url, format_choice, folder_path, update_progress=None, status_var=None, progress_var=None, cancel_button = None):
     global download_process, current_progress,download_active
     download_active = True
+
+    def handle_error(error_msg):
+            show_error(error_msg)
+            if update_progress:
+                dummy_data = {
+                    '_percent_str': '0%',
+                    '_speed_str': 'Error',
+                    '_eta_str': ''
+                }
+                update_progress(dummy_data, 0, None)
+            else:
+                progress_callback(0, "Error occurred")
     
     if not is_valid_youtube_url(url):
         show_error("Invalid YouTube URL")
@@ -59,18 +71,31 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
         # Monitor Progress
 
         for line in download_process.stdout:
+            print("YT-DLP LINE:", line)  # for debug
+
             if "[download]" in line:
+                # extract percentage
                 match = re.search(r'(\d+\.?\d*)%', line)
                 if match:
                     current_progress = float(match.group(1))
 
-                    dummy_data = {
-                        '_percent_str': f"{current_progress}%",
-                        '_speed_str': 'N/A',  # You can parse this from yt-dlp if needed
-                        '_eta_str': 'N/A'
-                    }
+                 # Extract size, speed, estimated time remaing
+                size_match = re.search(r'of\s+([\d\.]+\w+)', line)
+                speed_match = re.search(r'(\d+\.?\d*\s?[KMG]?i?B/s)', line)                
+                eta_match = re.search(r'ETA (\d+:\d+)', line)
 
-                    if update_progress:
+                # Assign values or fallback to 'N/A' if no value found
+                total_size = size_match.group(1) if size_match else 'N/A'
+                speed = speed_match.group(1) if speed_match else 'N/A'
+                eta = eta_match.group(1) if eta_match else 'N/A'
+
+                dummy_data = {
+                    '_percent_str': f"{current_progress}% of {total_size}",
+                    '_speed_str': speed,  # 
+                    '_eta_str': eta
+                }
+
+                if update_progress:
                         update_progress(dummy_data, current_progress, None)
                 elif "error" in line.lower():
                     handle_error(line.strip())
@@ -87,21 +112,11 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
                     update_progress(dummy_data, 100, None)
                 else:
                     progress_callback(100, "Download complete!")
+        
     except Exception as e:
         handle_error(str(e))  # This closes the try-except properly
 
-    def handle_error(error_msg):
-        show_error(error_msg)
-        if update_progress:
-            dummy_data = {
-                '_percent_str': '0%',
-                '_speed_str': 'Error',
-                '_eta_str': ''
-            }
-            update_progress(dummy_data, 0, None)
-        else:
-            progress_callback(0, "Error occurred")
-
+    
 
 def toggle_pause_resume(is_paused_var):
     global download_process
