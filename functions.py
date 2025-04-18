@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import filedialog
 import threading
 from utils import show_error
+# from ui import on_download_complete
 
 def paste_url(entry_widget, root):
     """Pastes clipboard text into the given entry widget."""
@@ -16,7 +17,7 @@ def paste_url(entry_widget, root):
     except tk.TclError:  # Now correctly referenced
         show_error("Clipboard is empty or contains non-text data")
 
-def start_download(url_entry, format_var, status_var, folder_path, progress_var,status_label,cancel_button):
+def start_download(url_entry, format_var, status_var, folder_path, progress_var,status_label,cancel_button,on_complete):
     from utils import is_valid_youtube_url
 
     """######################################"""
@@ -56,7 +57,13 @@ def start_download(url_entry, format_var, status_var, folder_path, progress_var,
     # Start download in thread 
     threading.Thread(
         target=download_video,
-        args=(url, format_var.get(), folder_path.get(), update_progress, status_var, progress_var, cancel_button),
+        args=(url, format_var.get(), folder_path.get(),),
+         kwargs = {"update_progress" : update_progress, 
+                   "status_var" : status_var, 
+                   "progress_var" : progress_var, 
+                   "cancel_button" : cancel_button, 
+                   "on_complete" : on_complete
+                   },
         daemon=True
     ).start()
 

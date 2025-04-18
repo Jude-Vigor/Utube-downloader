@@ -31,7 +31,7 @@ def fetch_video_info(url):
         print("Error fetching video info:", e)
         return None
     
-def download_video(url, format_choice, folder_path, update_progress=None, status_var=None, progress_var=None, cancel_button = None):
+def download_video(url, format_choice, folder_path, update_progress=None, status_var=None, progress_var=None, cancel_button = None, on_complete=None):
     global download_process, current_progress,download_active
     download_active = True
 
@@ -103,6 +103,7 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
         if not download_active:
             print("Thread exiting because download was cancelled.")
             return
+        
         # ----- Handle completion after process output is done -----
         process_ref = download_process  # Save process before it might be set to None elsewhere
 
@@ -120,6 +121,10 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
                         update_progress(dummy_data, 100, None)
                     else:
                         progress_callback(100, "Download complete!")
+
+                    if on_complete and folder_path:
+                        on_complete(folder_path)
+
                 else:
                     handle_error("⚠️ Download failed or was cancelled.")
             except Exception as e:

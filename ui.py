@@ -7,7 +7,7 @@ from utils import truncate_text
 from functions import  start_download,paste_url
 from downloader import  toggle_pause_resume, stop_download,fetch_video_info,download_process
 from threading import Thread
-
+import os
 global pause_icon,resume_icon 
 
 pause_icon = ctk.CTkImage(Image.open("pause_icon2.png"), size=(20, 20))
@@ -38,6 +38,68 @@ def hide_tooltip(event=None):
 full_title = ''
 tooltip = None
 cancel_button = {"value":""}
+
+
+downloaded_files = []  # This holds file paths of completed downloads
+downloaded_frame = None  # Will hold reference to the container for each downloaded item
+
+# def load_previous_downloads(download_dir):
+#     if os.path.exists(download_dir):
+#         for f in os.listdir(download_dir):
+#             path = os.path.join(download_dir, f)
+#             if os.path.isfile(path):
+#                 downloaded_files.append(path)
+
+def on_download_complete(file_path):
+    downloaded_files.append(file_path)
+    # refresh_downloaded_tab()
+    downloaded_frame.after(0, refresh_downloaded_tab)
+
+# def on_download_complete(folder_path):
+#     print("🎉 Download completed, refreshing tab...")
+#     refresh_downloaded_tab(downloaded_tab_frame, folder_path)
+
+def safe_destroy(widget):
+    try:
+        if widget.winfo_exists():
+            widget.destroy()
+            widget.clear()
+    except:
+        pass  # Avoid crashing if already destroyed or invalid
+
+
+
+def refresh_downloaded_tab():
+    for widget in downloaded_frame.winfo_children():
+        safe_destroy(widget)
+        
+
+    for file_path in downloaded_files:
+        item_frame = ctk.CTkFrame(downloaded_frame, height=90, width=570, border_width=2)
+        item_frame.pack(pady=5, padx=10, fill="x")
+        item_frame.pack_propagate(False)
+
+        label = ttk.Label(item_frame, text=os.path.basename(file_path), style="progress.TLabel")
+        label.pack(side="left", padx=20)
+
+        go_btn = ctk.CTkButton(item_frame, text="Go to file", width=80, command=lambda p=file_path: os.startfile(os.path.dirname(p)))
+        go_btn.pack(side="right", padx=5)
+
+        play_btn = ctk.CTkButton(item_frame, text="Play", width=80, command=lambda p=file_path: os.startfile(p))
+        play_btn.pack(side="right", padx=5)
+
+        del_btn = ctk.CTkButton(item_frame, text="Delete", width=80, command=lambda p=file_path, f=item_frame: delete_file(p, f))
+        del_btn.pack(side="right", padx=5)
+
+def delete_file(path, frame_widget):
+    try:
+        os.remove(path)
+        downloaded_files.remove(path)
+        if frame_widget.winfo_exists():
+            frame_widget.destroy()
+    except Exception as e:
+        messagebox.showerror("Error", f"Could not delete file:\n{e}")
+ 
 
 def create_ui():
     root = ctk.CTk()
@@ -164,7 +226,7 @@ def create_ui():
     video_radio.pack(anchor="w", padx=10)
 
     download_button = ctk.CTkButton(top_frame, text="", fg_color="lightgrey", image=download_icon, height=20, width=20, 
-                                    command=lambda: start_download(url_entry, format_var,  status_var, folder_path, progress_var,status_label,cancel_button))
+                                    command=lambda: start_download(url_entry, format_var,  status_var, folder_path, progress_var,status_label,cancel_button, on_download_complete))
     download_button.pack(side="right")
 
     paste_button = ctk.CTkButton(top_frame, text="",fg_color="lightgrey", command=lambda: paste_url(url_entry, root), image = paste_icon,  height=20, width=20)
@@ -224,23 +286,35 @@ def create_ui():
                        
     progress_listbox1.pack(fill="both", expand=True)
 
-    # Downloaded Listbox
-    downloaded_listbox = tk.Listbox(downloaded_tab, background="#EBEBEB")
-    downloaded_listbox.pack(fill="both", expand=True)
 
-    downloaded_frame = ctk.CTkFrame(downloaded_listbox, height=90, width=570, border_width=2)
-    downloaded_frame.pack(pady=10, padx=5, fill="both")
-    downloaded_frame.pack_propagate(False)
+    # Create scrollable canvas inside downloaded_tab
+    downloaded_scroll = tk.Canvas(downloaded_tab, bg="#EBEBEB", height=400)
+    downloaded_scroll.pack(fill="both", expand=True)
 
-    downloaded_vidlabel = ttk.Label(downloaded_frame, text="Video Title downloaded", style="progress.TLabel")
-    downloaded_vidlabel.pack(side="left", padx=20)
+    scrollbar = ttk.Scrollbar(downloaded_tab, orient="vertical", command=downloaded_scroll.yview)
+    scrollbar.pack(side="right", fill="y")
 
-    delete_button = ctk.CTkButton(downloaded_frame, text="Delete", width=80)
-    delete_button.pack(side="right", padx=5)
-    play_button = ctk.CTkButton(downloaded_frame, text="Play", width=80)
-    play_button.pack(side="right", padx=5)
-    go_to_button = ctk.CTkButton(downloaded_frame, text="Go to file", width=80)
-    go_to_button.pack(side="right", padx=5)
+    downloaded_scroll.configure(yscrollcommand=scrollbar.set)
+
+    # Create the container inside the scrollable canvas
+    downloaded_container = tk.Frame(downloaded_scroll, bg="#EBEBEB")
+    downloaded_scroll.create_window((0, 0), window=downloaded_container, anchor="nw")
+
+    downloaded_container.bind("<Configure>", lambda e: downloaded_scroll.configure(scrollregion=downloaded_scroll.bbox("all")))
+
+    #  Now assign it globally
+    global downloaded_frame
+    downloaded_frame = downloaded_container
+                                                            
+    #  And finally load previous files (if folder is set)
+    if folder_path.get():
+        refresh_downloaded_tab()
+
+    # def on_configure(event):
+    #     downloaded_scroll.configure(scrollregion=downloaded_scroll.bbox("all"))
+
+    # downloaded_container.bind("<Configure>", on_configure)
+
     progress_listbox1.pack(fill="both", expand=True)
 
     notebook.add(progress_tab, text="In Progress")
