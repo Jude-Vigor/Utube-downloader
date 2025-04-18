@@ -69,7 +69,6 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
         )
 
         # Monitor Progress
-
         for line in download_process.stdout:
             print("YT-DLP LINE:", line)  # for debug
 
@@ -100,22 +99,36 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
                 elif "error" in line.lower():
                     handle_error(line.strip())
                     break
+        # Exit thread early if user cancelled the download
+        if not download_active:
+            print("Thread exiting because download was cancelled.")
+            return
+        # ----- Handle completion after process output is done -----
+        process_ref = download_process  # Save process before it might be set to None elsewhere
 
-                # Handle completion
-            if download_process.returncode == 0:
-                if update_progress:
-                    dummy_data = {
-                        '_percent_str': '100%',
-                        '_speed_str': 'Done',
-                        '_eta_str': ''
-                    }
-                    update_progress(dummy_data, 100, None)
+        if download_active and process_ref is not None:
+            try:
+                process_ref.wait()
+
+                if process_ref.returncode == 0:
+                    if update_progress:
+                        dummy_data = {
+                            '_percent_str': '100%',
+                            '_speed_str': 'Done',
+                            '_eta_str': '✅'
+                        }
+                        update_progress(dummy_data, 100, None)
+                    else:
+                        progress_callback(100, "Download complete!")
                 else:
-                    progress_callback(100, "Download complete!")
-        
+                    handle_error("⚠️ Download failed or was cancelled.")
+            except Exception as e:
+                handle_error(f"⚠️ Error during wait: {e}")
+        else:
+            print("⏹️ Download was cancelled early or never started.")
+
     except Exception as e:
         handle_error(str(e))  # This closes the try-except properly
-
     
 
 def toggle_pause_resume(is_paused_var):

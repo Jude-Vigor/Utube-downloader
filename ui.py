@@ -225,7 +225,7 @@ def create_ui():
     progress_listbox1.pack(fill="both", expand=True)
 
     # Downloaded Listbox
-    downloaded_listbox = tk.Listbox(downloaded_tab, background="orange")
+    downloaded_listbox = tk.Listbox(downloaded_tab, background="#EBEBEB")
     downloaded_listbox.pack(fill="both", expand=True)
 
     downloaded_frame = ctk.CTkFrame(downloaded_listbox, height=90, width=570, border_width=2)
