@@ -31,9 +31,12 @@ def fetch_video_info(url):
         print("Error fetching video info:", e)
         return None
     
+
 def download_video(url, format_choice, folder_path, update_progress=None, status_var=None, progress_var=None, cancel_button = None, on_complete=None):
     global download_process, current_progress,download_active
     download_active = True
+    
+    final_path = None
 
     def handle_error(error_msg):
             show_error(error_msg)
@@ -67,12 +70,17 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
             bufsize=1,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
         )
-
         # Monitor Progress
         for line in download_process.stdout:
             print("YT-DLP LINE:", line)  # for debug
 
             if "[download]" in line:
+
+                # Try to extract full path if line contains a file path
+                path_match = re.search(r'\[download\]\s+(.+\\.+\.\w+)', line)
+                if path_match:
+                    final_path = path_match.group(1).strip()
+                    print("✅ Full file path detected:", final_path)
                 # extract percentage
                 match = re.search(r'(\d+\.?\d*)%', line)
                 if match:
@@ -122,8 +130,8 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
                     else:
                         progress_callback(100, "Download complete!")
 
-                    if on_complete and folder_path:
-                        on_complete(folder_path)
+                    if on_complete and final_path:
+                        on_complete(final_path)
 
                 else:
                     handle_error("⚠️ Download failed or was cancelled.")

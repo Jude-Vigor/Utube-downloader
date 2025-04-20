@@ -51,6 +51,8 @@ downloaded_frame = None  # Will hold reference to the container for each downloa
 #                 downloaded_files.append(path)
 
 def on_download_complete(file_path):
+    print("✅ Download complete:", file_path)
+
     downloaded_files.append(file_path)
     # refresh_downloaded_tab()
     downloaded_frame.after(0, refresh_downloaded_tab)
