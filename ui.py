@@ -10,9 +10,9 @@ from threading import Thread
 import os
 global pause_icon,resume_icon 
 
-pause_icon = ctk.CTkImage(Image.open("pause_icon2.png"), size=(20, 20))
-resume_icon = ctk.CTkImage(Image.open("resume_icon2.png"), size=(20, 20))
-cancel_icon = CTkImage(Image.open("cancel_icon2.png"), size=(20, 20))
+pause_icon = ctk.CTkImage(Image.open("assets/images/pause_icon2.png"), size=(20, 20))
+resume_icon = ctk.CTkImage(Image.open("assets/images/resume_icon2.png"), size=(20, 20))
+cancel_icon = CTkImage(Image.open("assets/images/cancel_icon2.png"), size=(20, 20))
 
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("green")
@@ -43,13 +43,6 @@ cancel_button = {"value":""}
 downloaded_files = []  # This holds file paths of completed downloads
 downloaded_frame = None  # Will hold reference to the container for each downloaded item
 
-# def load_previous_downloads(download_dir):
-#     if os.path.exists(download_dir):
-#         for f in os.listdir(download_dir):
-#             path = os.path.join(download_dir, f)
-#             if os.path.isfile(path):
-#                 downloaded_files.append(path)
-
 def on_download_complete(file_path):
     print("✅ Download complete:", file_path)
 
@@ -74,14 +67,18 @@ def safe_destroy(widget):
 def refresh_downloaded_tab():
     for widget in downloaded_frame.winfo_children():
         safe_destroy(widget)
-        
+    
+    
 
     for file_path in downloaded_files:
         item_frame = ctk.CTkFrame(downloaded_frame, height=90, width=570, border_width=2)
         item_frame.pack(pady=5, padx=10, fill="x")
         item_frame.pack_propagate(False)
 
-        label = ttk.Label(item_frame, text=os.path.basename(file_path), style="progress.TLabel")
+        file_name = os.path.basename(file_path)
+        short_name = truncate_text(file_name,50)
+
+        label = ttk.Label(item_frame, text=short_name, style="progress.TLabel")
         label.pack(side="left", padx=20)
 
         go_btn = ctk.CTkButton(item_frame, text="Go to file", width=80, command=lambda p=file_path: os.startfile(os.path.dirname(p)))
@@ -93,22 +90,34 @@ def refresh_downloaded_tab():
         del_btn = ctk.CTkButton(item_frame, text="Delete", width=80, command=lambda p=file_path, f=item_frame: delete_file(p, f))
         del_btn.pack(side="right", padx=5)
 
+        # Add tooltip to show full filename on hover
+        label.bind("<Enter>", lambda e, t=file_name: show_tooltip(e, t))
+        label.bind("<Leave>", hide_tooltip)
+
+from send2trash import send2trash
+
 def delete_file(path, frame_widget):
+    # Ask the user for confirmation
+    confirm = messagebox.askyesno("Confirm Delete", f"Are you sure you want to move this file to Recycle Bin?\n\n{os.path.basename(path)}")
+    if not confirm:
+        return
+
     try:
-        os.remove(path)
+        # os.remove(path)
+        send2trash(path)
         downloaded_files.remove(path)
         if frame_widget.winfo_exists():
             frame_widget.destroy()
     except Exception as e:
         messagebox.showerror("Error", f"Could not delete file:\n{e}")
- 
+
 
 def create_ui():
     root = ctk.CTk()
     root.title("Vigor YT Downloader")
     root.geometry("700x400")
 
-    youtube_img = Image.open("youtube.ico")
+    youtube_img = Image.open("assets/images/youtube.ico")
     youtube_icon = CTkImage(youtube_img, size= (100,40))
 
     # from downloader import download_active
@@ -213,9 +222,9 @@ def create_ui():
     # url_entry.bind("<KeyRelease>", on_url_entry)
 
     # Load icons
-    paste_img = Image.open("paste_icon.png")
+    paste_img = Image.open("assets/images/paste_icon.png")
     paste_icon = CTkImage(light_image=paste_img, dark_image=paste_img, size=(20,20))
-    download_img = Image.open("download_icon.png") 
+    download_img = Image.open("assets/images/download_icon.png") 
     download_icon = CTkImage(light_image=download_img, dark_image=download_img, size=(20, 20))
 
     # Download Format Selection

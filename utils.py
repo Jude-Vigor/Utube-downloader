@@ -14,3 +14,6 @@ def truncate_text(text, max_length=30):
 def show_error(message):
     messagebox.showerror("Error", message)
 
+def sanitize_filename(name):
+    # Remove or replace characters that are not allowed in Windows filenames
+    return re.sub(r'[<>:"/\\|?*\u2022]', '', name)

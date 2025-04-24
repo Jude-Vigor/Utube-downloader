@@ -3,6 +3,7 @@ import psutil
 import re
 from utils import is_valid_youtube_url, show_error
 from yt_dlp import YoutubeDL
+from utils import sanitize_filename
 
 # Global state
 download_process = None
@@ -57,31 +58,41 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
     format_flag = "bestaudio/best" if format_choice == "audio" else "bestvideo+bestaudio"
 
     try:
+        # Fetch video title to sanitize manually
+        video_info = fetch_video_info(url)
+        title = video_info.get("title", "video") if video_info else "video"
+        safe_title = sanitize_filename(title)
+        output_template = f"{folder_path}/{safe_title}.%(ext)s"
+
         download_process = subprocess.Popen(
-            [
-                "yt-dlp", url,
+        [
+             "yt-dlp",
+                "--newline", "--no-color", "--console-title",
                 "-f", format_flag,
-                "-o", f"{folder_path}/%(title)s.%(ext)s",
-                "--newline", "--no-color", "--console-title"
-            ],
+                "-o", output_template,
+                url
+        ],
+
+
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
             bufsize=1,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
         )
-        # Monitor Progress
+        # Monitor Progress/ stdout loop where you detect the downloaded file path
         for line in download_process.stdout:
+            line = line.strip()
             print("YT-DLP LINE:", line)  # for debug
 
+            #  Detect merged final file
+            if "[Merger]" in line and "Merging formats into" in line:
+                match = re.search(r'Merging formats into\s+"(.+?)"', line)
+                if match:
+                    final_path = match.group(1).strip()
+                    print("✅ Final merged path:", final_path)
+            # Extract percentage progress
             if "[download]" in line:
-
-                # Try to extract full path if line contains a file path
-                path_match = re.search(r'\[download\]\s+(.+\\.+\.\w+)', line)
-                if path_match:
-                    final_path = path_match.group(1).strip()
-                    print("✅ Full file path detected:", final_path)
-                # extract percentage
                 match = re.search(r'(\d+\.?\d*)%', line)
                 if match:
                     current_progress = float(match.group(1))
@@ -104,6 +115,7 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
 
                 if update_progress:
                         update_progress(dummy_data, current_progress, None)
+
                 elif "error" in line.lower():
                     handle_error(line.strip())
                     break
