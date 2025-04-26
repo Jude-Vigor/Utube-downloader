@@ -66,8 +66,13 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
 
         download_process = subprocess.Popen(
         [
-             "yt-dlp",
-                "--newline", "--no-color", "--console-title",
+                "yt-dlp",
+                # '--cookies-from-browser', 'chrome',  #Automatically extract your YouTube login cookies from your Chrome browser, 
+                                                    #so it can act like you are watching/downloading the video.
+                "--newline", 
+                "--no-color", 
+                "--console-title",
+                # "--restrict-filenames"
                 "-f", format_flag,
                 "-o", output_template,
                 url
@@ -85,7 +90,14 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
             line = line.strip()
             print("YT-DLP LINE:", line)  # for debug
 
-            #  Detect merged final file
+            # ✅ Catch audio or non-merged downloads
+            if "[download]" in line and "Destination:" in line:
+                match = re.search(r'Destination:\s+(.+)', line)
+                if match:
+                    final_path = match.group(1).strip()
+                    print("✅ Audio file path detected:", final_path)
+                        #  Detect merged final file
+
             if "[Merger]" in line and "Merging formats into" in line:
                 match = re.search(r'Merging formats into\s+"(.+?)"', line)
                 if match:

@@ -13,6 +13,8 @@ global pause_icon,resume_icon
 pause_icon = ctk.CTkImage(Image.open("assets/images/pause_icon2.png"), size=(20, 20))
 resume_icon = ctk.CTkImage(Image.open("assets/images/resume_icon2.png"), size=(20, 20))
 cancel_icon = CTkImage(Image.open("assets/images/cancel_icon2.png"), size=(20, 20))
+delete_icon = CTkImage(Image.open("assets/images/delete_icon.png"), size= (20,20))
+# go_to_file_icon = CTkImage(Image.open("assets/images/go_to_file.png"), size= (20,20))
 
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("green")
@@ -50,10 +52,6 @@ def on_download_complete(file_path):
     # refresh_downloaded_tab()
     downloaded_frame.after(0, refresh_downloaded_tab)
 
-# def on_download_complete(folder_path):
-#     print("🎉 Download completed, refreshing tab...")
-#     refresh_downloaded_tab(downloaded_tab_frame, folder_path)
-
 def safe_destroy(widget):
     try:
         if widget.winfo_exists():
@@ -62,13 +60,9 @@ def safe_destroy(widget):
     except:
         pass  # Avoid crashing if already destroyed or invalid
 
-
-
 def refresh_downloaded_tab():
     for widget in downloaded_frame.winfo_children():
         safe_destroy(widget)
-    
-    
 
     for file_path in downloaded_files:
         item_frame = ctk.CTkFrame(downloaded_frame, height=90, width=570, border_width=2)
@@ -76,18 +70,18 @@ def refresh_downloaded_tab():
         item_frame.pack_propagate(False)
 
         file_name = os.path.basename(file_path)
-        short_name = truncate_text(file_name,50)
+        short_name = truncate_text(file_name,40)
 
         label = ttk.Label(item_frame, text=short_name, style="progress.TLabel")
         label.pack(side="left", padx=20)
 
-        go_btn = ctk.CTkButton(item_frame, text="Go to file", width=80, command=lambda p=file_path: os.startfile(os.path.dirname(p)))
-        go_btn.pack(side="right", padx=5)
+        go_btn = ctk.CTkButton(item_frame, text="Go to file",  height=25, width=20, fg_color="grey" ,command=lambda p=file_path: os.startfile(os.path.dirname(p)))
+        go_btn.pack(side="right", padx=10)
 
-        play_btn = ctk.CTkButton(item_frame, text="Play", width=80, command=lambda p=file_path: os.startfile(p))
+        play_btn = ctk.CTkButton(item_frame, text="", image= resume_icon, height=20, width=20, fg_color="lightgrey", command=lambda p=file_path: os.startfile(p))
         play_btn.pack(side="right", padx=5)
 
-        del_btn = ctk.CTkButton(item_frame, text="Delete", width=80, command=lambda p=file_path, f=item_frame: delete_file(p, f))
+        del_btn = ctk.CTkButton(item_frame, text="",image= delete_icon, height=20, width=20, fg_color="lightgrey", command=lambda p=file_path, f=item_frame: delete_file(p, f))
         del_btn.pack(side="right", padx=5)
 
         # Add tooltip to show full filename on hover
@@ -148,11 +142,11 @@ def create_ui():
             status_var.set("▶️ Resuming...")
 
     def on_cancel(cancel_button,status_var,progress_var,vid_titlelvar):
-        from downloader import download_active
+        from downloader import download_active    ####
         
         response = messagebox.askyesno("Cancel Download", "Are you sure you want to cancel the download?")
 
-        if response:
+        if response: # i.e if yes;
             if download_active:
                 stop_download()
                 cancel_button.configure(state="disabled")

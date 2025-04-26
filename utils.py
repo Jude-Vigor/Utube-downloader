@@ -17,3 +17,12 @@ def show_error(message):
 def sanitize_filename(name):
     # Remove or replace characters that are not allowed in Windows filenames
     return re.sub(r'[<>:"/\\|?*\u2022]', '', name)
+    
+
+# # ✅ Catch audio or non-merged downloads
+# if "[download]" in line and "Destination:" in line:
+#     match = re.search(r'Destination:\s+(.+)', line)
+#     if match:
+#         final_path = match.group(1).strip()
+#         print("✅ Audio file path detected:", final_path)
+#             #  Detect merged final file
