@@ -5,9 +5,11 @@ from customtkinter import CTkImage
 from PIL import Image
 from utils import truncate_text
 from functions import  start_download,paste_url
-from downloader import  toggle_pause_resume, stop_download,fetch_video_info,download_process
+from downloader import  toggle_pause_resume, stop_download,fetch_video_info,download_process,download_active
 from threading import Thread
 import os
+from send2trash import send2trash
+
 global pause_icon,resume_icon 
 
 pause_icon = ctk.CTkImage(Image.open("assets/images/pause_icon2.png"), size=(20, 20))
@@ -49,7 +51,6 @@ def on_download_complete(file_path):
     print("✅ Download complete:", file_path)
 
     downloaded_files.append(file_path)
-    # refresh_downloaded_tab()
     downloaded_frame.after(0, refresh_downloaded_tab)
 
 def safe_destroy(widget):
@@ -75,20 +76,20 @@ def refresh_downloaded_tab():
         label = ttk.Label(item_frame, text=short_name, style="progress.TLabel")
         label.pack(side="left", padx=20)
 
-        go_btn = ctk.CTkButton(item_frame, text="Go to file",  height=25, width=20, fg_color="grey" ,command=lambda p=file_path: os.startfile(os.path.dirname(p)))
+        go_btn = ctk.CTkButton(item_frame, text="Go to file",  height=25, width=20, fg_color="blue" ,command=lambda p=file_path: os.startfile(os.path.dirname(p)))
         go_btn.pack(side="right", padx=10)
+
+        del_btn = ctk.CTkButton(item_frame, text="",image= delete_icon, height=20, width=20, fg_color="lightgrey", command=lambda p=file_path, f=item_frame: delete_file(p, f))
+        del_btn.pack(side="right", padx=5)
 
         play_btn = ctk.CTkButton(item_frame, text="", image= resume_icon, height=20, width=20, fg_color="lightgrey", command=lambda p=file_path: os.startfile(p))
         play_btn.pack(side="right", padx=5)
 
-        del_btn = ctk.CTkButton(item_frame, text="",image= delete_icon, height=20, width=20, fg_color="lightgrey", command=lambda p=file_path, f=item_frame: delete_file(p, f))
-        del_btn.pack(side="right", padx=5)
 
         # Add tooltip to show full filename on hover
         label.bind("<Enter>", lambda e, t=file_name: show_tooltip(e, t))
         label.bind("<Leave>", hide_tooltip)
 
-from send2trash import send2trash
 
 def delete_file(path, frame_widget):
     # Ask the user for confirmation
@@ -119,9 +120,8 @@ def create_ui():
     is_paused_var = tk.BooleanVar(value=False)
 
     def on_toggle(btn, status_var):
-
-        from downloader import download_active  # import the flag
-
+        from downloader import download_active                                  
+        # global download_active
         if not download_active:
             print("⚠️ Cannot resume: No active download.")
             
@@ -142,10 +142,9 @@ def create_ui():
             status_var.set("▶️ Resuming...")
 
     def on_cancel(cancel_button,status_var,progress_var,vid_titlelvar):
-        from downloader import download_active    ####
-        
+        from downloader import download_active    
+        # global download_active
         response = messagebox.askyesno("Cancel Download", "Are you sure you want to cancel the download?")
-
         if response: # i.e if yes;
             if download_active:
                 stop_download()
@@ -154,7 +153,7 @@ def create_ui():
                 status_label.configure(foreground="red")
                 progress_var.set(0)
                 vid_title_var.set("Video title will appear here.")
-
+                # tooltip(text = "")
 
                 status_label.after(4000, lambda: status_var.set(""))
             else:
@@ -284,7 +283,7 @@ def create_ui():
     toggle_button.pack(side="right", padx=5)
 
     cancel_button = ctk.CTkButton(progress_frame, text= "", image = cancel_icon, fg_color= "lightgrey", height=20, width=20,
-                                   command= lambda: on_cancel(cancel_button, status_var, progress_var,vid_title_var))
+                                   command= lambda: on_cancel(cancel_button, status_var, progress_var,vid_title_var, ))
     cancel_button.configure(state = "disabled")
     
     cancel_button.pack(side = "right", padx = 5 )

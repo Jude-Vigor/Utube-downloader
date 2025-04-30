@@ -2,7 +2,7 @@ from downloader import download_video
 import tkinter as tk 
 from tkinter import filedialog
 import threading
-from utils import show_error
+from utils import show_error,is_valid_youtube_url
 # from ui import on_download_complete
 
 def paste_url(entry_widget, root):
@@ -18,11 +18,9 @@ def paste_url(entry_widget, root):
         show_error("Clipboard is empty or contains non-text data")
 
 def start_download(url_entry, format_var, status_var, folder_path, progress_var,status_label,cancel_button,on_complete):
-    from utils import is_valid_youtube_url
+    # from utils import is_valid_youtube_url
 
     """######################################"""
-    # is_valid_youtube_url(url_entry.get())
-    # if validate_url:
     url = url_entry.get().strip()
     if not url or not is_valid_youtube_url(url):
         show_error("Please enter a YouTube URL")
