@@ -59,10 +59,23 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
 
     try:
         # Fetch video title to sanitize manually
+        # video_info = fetch_video_info(url)
+        # title = video_info.get("title", "video") if video_info else "video"
+        # safe_title = sanitize_filename(title)
+        # output_template = f"{folder_path}/{safe_title}.%(ext)s"
+
+
+
         video_info = fetch_video_info(url)
-        title = video_info.get("title", "video") if video_info else "video"
-        safe_title = sanitize_filename(title)
-        output_template = f"{folder_path}/{safe_title}.%(ext)s"
+        is_playlist = 'entries' in video_info if video_info else False
+
+        if is_playlist:
+            output_template = f"{folder_path}/%(playlist_index)s - %(title)s.%(ext)s"
+        else:
+            title = video_info.get("title", "video") if video_info else "video"
+            safe_title = sanitize_filename(title)
+            output_template = f"{folder_path}/{safe_title}.%(ext)s"
+
 
         download_process = subprocess.Popen(
         [
