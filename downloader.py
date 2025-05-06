@@ -34,7 +34,7 @@ def fetch_video_info(url):
     
 
 def download_video(url, format_choice, folder_path, update_progress=None, status_var=None, progress_var=None, cancel_button = None, on_complete=None):
-    global download_process, current_progress,download_active
+    global download_process, current_progress, download_active
     download_active = True
     
     final_path = None
@@ -72,7 +72,6 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
                 "--newline", 
                 "--no-color", 
                 "--console-title",
-                # "--restrict-filenames"
                 "-f", format_flag,
                 "-o", output_template,
                 url
@@ -214,7 +213,7 @@ def resume_download():
 
 def stop_download():
     global download_process, download_active
-    download_active = False
+    download_active = False  # Set download_active state to false when user click cancel 
 
     if not download_process:
         print("No active download to cancel.")
@@ -229,9 +228,13 @@ def stop_download():
 
         # Then terminate the main download process
         p.terminate()
-
+        try:
+            # Wait up to 5 seconds for process to terminate
+            p.wait(timeout=5)
+            print("✅ Download stopped successfully.")
+        except psutil.TimeoutExpired:
+            print("⚠️ Process did not terminate within timeout.")
         download_process = None  # Reset the global reference
-        print("✅ Download stopped successfully.")
 
     except psutil.NoSuchProcess:
         print("⚠️ Process not found. Might have already exited.")

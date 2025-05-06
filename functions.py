@@ -3,7 +3,6 @@ import tkinter as tk
 from tkinter import filedialog
 import threading
 from utils import show_error,is_valid_youtube_url
-# from ui import on_download_complete
 
 def paste_url(entry_widget, root):
     """Pastes clipboard text into the given entry widget."""
@@ -28,7 +27,7 @@ def start_download(url_entry, format_var, status_var, folder_path, progress_var,
     
     folder_selected = filedialog.askdirectory()
     cancel_button.configure(state="normal")  # Enable cancel button
-
+    
     if not folder_selected:
         return
     folder_path.set(folder_selected)

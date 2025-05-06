@@ -2,7 +2,7 @@ import customtkinter as ctk
 import tkinter as tk
 from tkinter import ttk,messagebox
 from customtkinter import CTkImage
-from PIL import Image
+from PIL import Image, ImageTk, ImageSequence
 from utils import truncate_text
 from functions import  start_download,paste_url
 from downloader import  toggle_pause_resume, stop_download,fetch_video_info,download_process,download_active
@@ -11,6 +11,7 @@ import os
 from send2trash import send2trash
 
 global pause_icon,resume_icon 
+
 
 pause_icon = ctk.CTkImage(Image.open("assets/images/pause_icon2.png"), size=(20, 20))
 resume_icon = ctk.CTkImage(Image.open("assets/images/resume_icon2.png"), size=(20, 20))
@@ -41,14 +42,14 @@ def hide_tooltip(event=None):
 
 full_title = ''
 tooltip = None
-cancel_button = {"value":""}
-
+# cancel_button = {"value":""}
 
 downloaded_files = []  # This holds file paths of completed downloads
 downloaded_frame = None  # Will hold reference to the container for each downloaded item
 
-def on_download_complete(file_path):
+def on_download_complete(file_path, ):
     print("✅ Download complete:", file_path)
+    cancel_button.configure(state="disabled")
 
     downloaded_files.append(file_path)
     downloaded_frame.after(0, refresh_downloaded_tab)
@@ -106,7 +107,7 @@ def delete_file(path, frame_widget):
     except Exception as e:
         messagebox.showerror("Error", f"Could not delete file:\n{e}")
 
-
+# ---Root and Widgets setup ---
 def create_ui():
     root = ctk.CTk()
     root.title("Vigor YT Downloader")
@@ -114,15 +115,16 @@ def create_ui():
 
     youtube_img = Image.open("assets/images/youtube.ico")
     youtube_icon = CTkImage(youtube_img, size= (100,40))
-
-    # from downloader import download_active
+    global cancel_button
     # Create a global BooleanVar to manage pause/resume state
     is_paused_var = tk.BooleanVar(value=False)
 
     def on_toggle(btn, status_var):
-        # from downloader import download_active                                  # import the flag
-        global download_active
-        if not download_active:
+        from downloader import download_active                                  # import the flag
+        # global download_active
+        if  not download_active :
+            print(download_active)
+            print(download_process)
             print("⚠️ Cannot resume: No active download.")
             
             status_var.set("⚠️ No active Download .")
@@ -141,9 +143,9 @@ def create_ui():
             btn.image = pause_icon
             status_var.set("▶️ Resuming...")
 
-    def on_cancel(cancel_button,status_var,progress_var,vid_titlelvar):
-        # from downloader import download_active    ####
-        global download_active
+    def on_cancel(cancel_button,status_var,progress_var,vid_title_var):
+        from downloader import download_active    
+        # global download_active
         response = messagebox.askyesno("Cancel Download", "Are you sure you want to cancel the download?")
         if response: # i.e if yes;
             if download_active:
@@ -158,7 +160,6 @@ def create_ui():
                 status_label.after(4000, lambda: status_var.set(""))
             else:
                 pass
-            
         else:
             pass
     # Widgets 
@@ -169,13 +170,14 @@ def create_ui():
     top_frame.pack(anchor="w", fill="x", pady=5, padx=10)
     
     url_var = tk.StringVar()
-    url_entry = ctk.CTkEntry(top_frame, textvariable = url_var, width=400)
+    url_entry = ctk.CTkEntry(top_frame, textvariable = url_var, width=400, )
     url_entry.pack(side="left", fill="x", expand=True)
-
+    root.after(200, lambda:url_entry.focus_set())
+    
     folder_path = tk.StringVar()
 
     last_url = {"value": ""} ## use a mutable object to allow updates inside nested function without declaring nonlocal scope
-    
+
     def on_url_entry(event=None):
         from utils import is_valid_youtube_url
         url = url_entry.get().strip()
@@ -185,10 +187,11 @@ def create_ui():
             vid_title_var.set("Video title will appear here.")
             return
         if url == last_url["value"]:
-            return
+            pass
         
         last_url["value"] = url
         vid_title_var.set("Fetching video info...")
+        spinner_label.pack(side="left", padx=5)
 
         def fetch_and_update(url):
             info = fetch_video_info(url)
@@ -207,10 +210,13 @@ def create_ui():
                 # root.after(0, lambda: root.title(full_title))  # <-- Set window title
             else:
                 url_entry.after(0, lambda: vid_title_var.set("❌ Could not fetch video info."))
+                
+                # Always hide spinner when done
+            spinner_label.after(0, spinner_label.pack_forget)
 
         Thread(target = fetch_and_update, args=(url,), daemon = True).start()    
     
-    url_entry.bind("<FocusOut>", on_url_entry)  # when the user leaves the field
+    url_var.trace_add("write", lambda *args: on_url_entry())
     url_entry.bind("<Return>", on_url_entry)    # when user presses Enter  
     # url_entry.bind("<KeyRelease>", on_url_entry)
 
@@ -225,7 +231,6 @@ def create_ui():
 
     audio_radio = ctk.CTkRadioButton(root, text="Audio", variable=format_var, value="audio")
     audio_radio.pack(anchor="w", padx=10)
-
     video_radio = ctk.CTkRadioButton(root, text="Video", variable=format_var, value="video", fg_color="red")
     video_radio.pack(anchor="w", padx=10)
 
@@ -236,6 +241,32 @@ def create_ui():
     paste_button = ctk.CTkButton(top_frame, text="",fg_color="lightgrey", command=lambda: paste_url(url_entry, root), image = paste_icon,  height=20, width=20)
     paste_button.pack(side = "right", padx=5)
 
+    def create_spinner(parent_frame):
+        spinner_path = "assets/images/spinner.gif"  # Ensure it's animated GIF
+        spinner_img = Image.open(spinner_path)
+        spinner_frames = []
+
+        try:
+            while True:
+                spinner_frames.append(spinner_img.copy())
+                spinner_img.seek(len(spinner_frames))
+        except EOFError:
+            pass
+
+        photo_images = [ImageTk.PhotoImage(frame.copy().resize((20,20), Image.LANCZOS)) for frame in spinner_frames]
+
+        label = tk.Label(parent_frame, anchor="w", justify= "left",bd=0)
+        
+        def animate(index=0):
+            frame = photo_images[index]
+            label.configure(image=frame)
+            label.image = frame
+            index = (index + 1) % len(photo_images)
+            label.after(100, animate, index)
+
+        animate()
+        return label
+
     # Style
     style = ttk.Style()
     style.configure("TNotebook.Tab", font=("Helvetica", 12, "bold"), padding=[10, 5])
@@ -245,20 +276,25 @@ def create_ui():
     # Notebook for Progress & Downloaded Tabs
     notebook = ttk.Notebook(root)
     notebook.pack(fill="both", padx=10, pady=5, expand=True)
-
     progress_tab = ctk.CTkFrame(notebook)
     downloaded_tab = ctk.CTkFrame(notebook)
-
     # Progress Listbox
     progress_listbox1 = tk.Listbox(progress_tab, background="#EBEBEB")
     progress_frame = ctk.CTkFrame(progress_tab, height=90, width=570)
     progress_frame.pack(pady=0, padx=0, fill="both")
     progress_frame.pack_propagate(True) #The geometry of the slave determine the parent size
 
+    # Wrap Vid_titlelabel and spinner in a frame
+    title_frame = ctk.CTkFrame(progress_frame, fg_color="transparent")  # Transparent background
+    title_frame.pack(side="left", padx=10, pady=10)
     vid_title_var = tk.StringVar()
     vid_title_var.set("Video title will appear here.")
-    vid_titlelabel = ttk.Label(progress_frame, anchor= "w", justify= "left",textvariable = vid_title_var, style="progress.TLabel",wraplength=265, width=25, relief="solid")
-    vid_titlelabel.pack(side="left", padx=10, pady=10)
+    vid_titlelabel = ttk.Label(title_frame, anchor="w", justify="left", textvariable=vid_title_var, style="progress.TLabel", wraplength=265, width=25, relief="solid")
+    vid_titlelabel.pack(side="left")
+
+    spinner_label = create_spinner(title_frame)
+    spinner_label.pack(side="left", padx=5, pady=5)
+    spinner_label.pack_forget()
 
     # Bind tooltip events
     
