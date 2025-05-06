@@ -5,6 +5,10 @@ YOUTUBE_REGEX = re.compile(
     r"^(https?://)?(www\.)?(youtube\.com|youtu\.be)/.+"
 )
 
+#play list code
+# yt-dlp --ignore-errors --yes-playlist -o "%(playlist_index)s - %(title)s.%(ext)s" "https://www.youtube.com/playlist?list=PL_c9BZzLwBRK0Pc28IdvPQizD2mJlgoID" 
+
+
 def is_valid_youtube_url(url):
     return bool(YOUTUBE_REGEX.match(url))
 
@@ -13,10 +17,6 @@ def truncate_text(text, max_length=30):
 
 def show_error(message):
     messagebox.showerror("Error", message)
-
-# def sanitize_filename(name):
-#     # Remove or replace characters that are not allowed in Windows filenames
-#     return re.sub(r'[<>:"/\\|?*\u2022]', '', name)
 
 def sanitize_filename(name):
     # Remove illegal characters first
