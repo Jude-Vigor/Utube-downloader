@@ -123,8 +123,8 @@ def create_ui():
         from downloader import download_active                                  # import the flag
         # global download_active
         if  not download_active :
-            print(download_active)
-            print(download_process)
+            print(f"download_active : {download_active}")
+            print(f"download_process : {download_process}")
             print("⚠️ Cannot resume: No active download.")
             
             status_var.set("⚠️ No active Download .")
@@ -148,7 +148,7 @@ def create_ui():
         # global download_active
         response = messagebox.askyesno("Cancel Download", "Are you sure you want to cancel the download?")
         if response: # i.e if yes;
-            if download_active:
+            if download_active or download_process is not None:
                 stop_download()
                 cancel_button.configure(state="disabled")
                 status_var.set("❌ Download cancelled.")

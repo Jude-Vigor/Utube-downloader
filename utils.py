@@ -1,13 +1,11 @@
 import re
 from tkinter import messagebox
+import unicodedata
+
 
 YOUTUBE_REGEX = re.compile(
     r"^(https?://)?(www\.)?(youtube\.com|youtu\.be)/.+"
 )
-
-#play list code
-# yt-dlp --ignore-errors --yes-playlist -o "%(playlist_index)s - %(title)s.%(ext)s" "https://www.youtube.com/playlist?list=PL_c9BZzLwBRK0Pc28IdvPQizD2mJlgoID" 
-
 
 def is_valid_youtube_url(url):
     return bool(YOUTUBE_REGEX.match(url))
@@ -30,6 +28,24 @@ def sanitize_filename(name):
     
     # Collapse multiple spaces into one
     name = re.sub(r'\s+', ' ', name)
-    
-    return name
 
+ # Check reserved names
+    reserved_names = {"CON", "PRN", "AUX", "NUL",
+                      *(f"COM{i}" for i in range(1, 10)),
+                      *(f"LPT{i}" for i in range(1, 10))}
+    if name.upper().split('.')[0] in reserved_names:
+        name = f"_{name}"
+    
+    return name[:200]
+
+#Alternative to sanitize_name// not being used atm, might be needed later
+def clean_filename(filename):
+    # Remove emojis and non-ASCII characters
+    filename = unicodedata.normalize('NFKD', filename)
+    filename = filename.encode('ascii', 'ignore').decode('ascii')
+
+    # Remove leftover bad characters
+    filename = re.sub(r'[\\/*?:"<>|]', '', filename)
+
+    # Optionally limit length again
+    return filename[:200]

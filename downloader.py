@@ -40,16 +40,20 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
     final_path = None
 
     def handle_error(error_msg):
-            show_error(error_msg)
-            if update_progress:
-                dummy_data = {
-                    '_percent_str': '0%',
-                    '_speed_str': 'Error',
-                    '_eta_str': ''
-                }
-                update_progress(dummy_data, 0, None)
-            else:
-                progress_callback(0, "Error occurred")
+        global download_active, download_process  # Ensure we can modify the outer scope variable
+        
+        show_error(error_msg)
+        if update_progress:
+            dummy_data = {
+                '_percent_str': '0%',
+                '_speed_str': 'Error',
+                '_eta_str': ''
+            }
+            update_progress(dummy_data, 0, None)
+        else:
+            progress_callback(0, "Error occurred")
+            download_active = False  # **CRITICAL: Set to False on error**
+            download_process = None  # **CRITICAL: Also reset process**
     
     if not is_valid_youtube_url(url):
         show_error("Invalid YouTube URL")
@@ -58,13 +62,6 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
     format_flag = "bestaudio/best" if format_choice == "audio" else "bestvideo+bestaudio"
 
     try:
-        # Fetch video title to sanitize manually
-        # video_info = fetch_video_info(url)
-        # title = video_info.get("title", "video") if video_info else "video"
-        # safe_title = sanitize_filename(title)
-        # output_template = f"{folder_path}/{safe_title}.%(ext)s"
-
-
 
         video_info = fetch_video_info(url)
         is_playlist = 'entries' in video_info if video_info else False
@@ -178,7 +175,10 @@ def download_video(url, format_choice, folder_path, update_progress=None, status
 
     except Exception as e:
         handle_error(str(e))  # This closes the try-except properly
-    
+    finally:
+        download_active = False  # **CRITICAL:  Always reset after download**
+        download_process = None  # **CRITICAL:  Also reset process**
+
 
 def toggle_pause_resume(is_paused_var):
     global download_process
