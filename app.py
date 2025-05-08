@@ -1,5 +1,7 @@
 from ui import create_ui
 
-create_ui()
+
+if __name__ == "__main__":
+    create_ui()
 
 
